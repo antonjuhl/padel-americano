@@ -653,7 +653,8 @@ function recordRound(
     tournament,
     round,
     doubleScore,
-    singleScore
+    singleScore,
+    shouldSave = true
 ) {
 
     /*
@@ -939,9 +940,21 @@ function recordRound(
     tournament.currentMatches = null;
 
 
-    saveTournament(
-        tournament
-    );
+    /*
+       Only save when this is a real tournament.
+
+       Simulations use recordRound() too, but must
+       NEVER overwrite the real tournament in
+       localStorage.
+    */
+
+    if (shouldSave) {
+
+        saveTournament(
+            tournament
+        );
+
+    }
 
 
     return true;
@@ -1193,35 +1206,51 @@ function submitRound() {
     }
 
 
+    const doubleScore1Element =
+        document.getElementById(
+            "doubleScore1"
+        );
+
+
+    const doubleScore2Element =
+        document.getElementById(
+            "doubleScore2"
+        );
+
+
+    const singleScore1Element =
+        document.getElementById(
+            "singleScore1"
+        );
+
+
+    const singleScore2Element =
+        document.getElementById(
+            "singleScore2"
+        );
+
+
     const doubleScore1 =
         Number(
-            document.getElementById(
-                "doubleScore1"
-            ).value
+            doubleScore1Element.value
         );
 
 
     const doubleScore2 =
         Number(
-            document.getElementById(
-                "doubleScore2"
-            ).value
+            doubleScore2Element.value
         );
 
 
     const singleScore1 =
         Number(
-            document.getElementById(
-                "singleScore1"
-            ).value
+            singleScore1Element.value
         );
 
 
     const singleScore2 =
         Number(
-            document.getElementById(
-                "singleScore2"
-            ).value
+            singleScore2Element.value
         );
 
 
@@ -1231,32 +1260,75 @@ function submitRound() {
 
     if (
 
-        document.getElementById(
-            "doubleScore1"
-        ).value === ""
+        doubleScore1Element.value === ""
 
         ||
 
-        document.getElementById(
-            "doubleScore2"
-        ).value === ""
+        doubleScore2Element.value === ""
 
         ||
 
-        document.getElementById(
-            "singleScore1"
-        ).value === ""
+        singleScore1Element.value === ""
 
         ||
 
-        document.getElementById(
-            "singleScore2"
-        ).value === ""
+        singleScore2Element.value === ""
 
     ) {
 
         alert(
             "Indtast resultatet for begge kampe."
+        );
+
+        return;
+
+    }
+
+
+    /*
+       CHECK THAT ALL SCORES ARE VALID WHOLE NUMBERS
+    */
+
+    const scores = [
+
+        doubleScore1,
+        doubleScore2,
+        singleScore1,
+        singleScore2
+
+    ];
+
+
+    if (
+        scores.some(
+            score =>
+                !Number.isInteger(score)
+        )
+    ) {
+
+        alert(
+            "Point skal være hele tal."
+        );
+
+        return;
+
+    }
+
+
+    /*
+       CHECK RANGE
+    */
+
+    if (
+        scores.some(
+            score =>
+                score < 0 ||
+                score > 32
+        )
+    ) {
+
+        alert(
+            "Point skal være mellem 0 og 32."
         );
 
         return;
@@ -1293,37 +1365,6 @@ function submitRound() {
 
         alert(
             "Single-resultatet skal give præcis 32 point i alt."
-        );
-
-        return;
-
-    }
-
-
-    /*
-       CHECK RANGE
-    */
-
-    const scores = [
-
-        doubleScore1,
-        doubleScore2,
-        singleScore1,
-        singleScore2
-
-    ];
-
-
-    if (
-        scores.some(
-            score =>
-                score < 0 ||
-                score > 32
-        )
-    ) {
-
-        alert(
-            "Point skal være mellem 0 og 32."
         );
 
         return;
@@ -1378,6 +1419,16 @@ function submitRound() {
 
     /*
        GENERATE NEXT ROUND
+
+       IMPORTANT:
+
+       The next round is only generated
+       AFTER the current round has been
+       successfully recorded.
+
+       It is therefore impossible to
+       accidentally reveal the next round
+       before the current one is finished.
     */
 
     tournament.currentMatches =
@@ -1649,7 +1700,9 @@ function simulateTournament(
 
                 player2: 16
 
-            }
+            },
+
+            false
 
         );
 
@@ -1803,23 +1856,30 @@ document.addEventListener(
     }
 );
 
-// ==========================================
-// FAIRNESS TEST
-// ==========================================
 
-function runFairnessTest(roundCounts = [7, 14, 21, 28], simulations = 100) {
+/* =========================================================
+   FAIRNESS TEST
+   ========================================================= */
+
+function runFairnessTest(
+    roundCounts = [7, 14, 21, 28],
+    simulations = 100
+) {
 
     console.log("");
     console.log("==========================================");
     console.log("FAIRNESS TEST");
     console.log("==========================================");
+
     console.log(
         `Running ${simulations} simulations for each round count`
     );
+
     console.log("");
 
 
     const playerNames = [
+
         "Anton",
         "Næs",
         "Hans",
@@ -1827,362 +1887,381 @@ function runFairnessTest(roundCounts = [7, 14, 21, 28], simulations = 100) {
         "Legind",
         "Mølle",
         "Krelle"
+
     ];
 
 
-    roundCounts.forEach(roundCount => {
+    roundCounts.forEach(
+        roundCount => {
 
-        let worstDoubleDifference = 0;
-        let worstSingleDifference = 0;
-        let worstRestDifference = 0;
-        let worstPartnerDifference = 0;
+            let worstDoubleDifference = 0;
 
-        let worstPartnerRepetition = 0;
+            let worstSingleDifference = 0;
 
+            let worstRestDifference = 0;
 
-        for (
-            let simulation = 0;
-            simulation < simulations;
-            simulation++
-        ) {
+            let worstPartnerDifference = 0;
 
-            // ------------------------------------------
-            // Create completely fresh players
-            // ------------------------------------------
+            let worstPartnerRepetition = 0;
 
-            const players =
-                playerNames.map(
-                    (name, index) =>
-                        createPlayer(
-                            index + 1,
-                            name
-                        )
-                );
-
-
-            const tournament = {
-
-                players: players,
-
-                currentRound: 1,
-
-                history: [],
-
-                currentMatches: null
-
-            };
-
-
-            // ------------------------------------------
-            // Generate and record rounds
-            // ------------------------------------------
 
             for (
-                let round = 1;
-                round <= roundCount;
-                round++
+                let simulation = 0;
+                simulation < simulations;
+                simulation++
             ) {
 
-                const match =
-                    generateRound(
-                        tournament
+                /*
+                   Create completely fresh players.
+                */
+
+                const players =
+                    playerNames.map(
+                        (name, index) =>
+                            createPlayer(
+                                index + 1,
+                                name
+                            )
                     );
 
 
-                /*
-                   We don't need real scores here.
+                const tournament = {
 
-                   We only care about whether the
-                   scheduling algorithm distributes
-                   players fairly.
+                    players:
+                        players,
+
+                    currentRound:
+                        1,
+
+                    history:
+                        [],
+
+                    currentMatches:
+                        null
+
+                };
+
+
+                /*
+                   Generate and record rounds.
                 */
 
-                const doublePlayers = [
+                for (
+                    let round = 1;
+                    round <= roundCount;
+                    round++
+                ) {
 
-                    ...match.double.team1,
-
-                    ...match.double.team2
-
-                ];
-
-
-                const singlePlayers = [
-
-                    match.single.player1,
-
-                    match.single.player2
-
-                ];
+                    const match =
+                        generateRound(
+                            tournament
+                        );
 
 
-                const restPlayer =
-                    match.rest;
+                    /*
+                       We don't need real scores here.
+
+                       We only care about whether the
+                       scheduling algorithm distributes
+                       players fairly.
+                    */
+
+                    const doublePlayers = [
+
+                        ...match.double.team1,
+
+                        ...match.double.team2
+
+                    ];
 
 
-                // --------------------------------------
-                // Update participation statistics
-                // --------------------------------------
+                    const singlePlayers = [
 
-                doublePlayers.forEach(
-                    player => {
+                        match.single.player1,
 
-                        player.doubleGames++;
+                        match.single.player2
 
-                    }
-                );
+                    ];
 
 
-                singlePlayers.forEach(
-                    player => {
-
-                        player.singleGames++;
-
-                    }
-                );
+                    const restPlayer =
+                        match.rest;
 
 
-                restPlayer.rests++;
+                    /*
+                       Update participation statistics.
+                    */
 
+                    doublePlayers.forEach(
+                        player => {
 
-                // --------------------------------------
-                // Track partners
-                // --------------------------------------
-
-                const team1 =
-                    match.double.team1;
-
-                const team2 =
-                    match.double.team2;
-
-
-                addPartnerRelation(
-                    team1[0],
-                    team1[1]
-                );
-
-
-                addPartnerRelation(
-                    team2[0],
-                    team2[1]
-                );
-
-
-                // --------------------------------------
-                // Track opponents
-                // --------------------------------------
-
-                addOpponentRelation(
-                    team1[0],
-                    team2[0]
-                );
-
-                addOpponentRelation(
-                    team1[0],
-                    team2[1]
-                );
-
-                addOpponentRelation(
-                    team1[1],
-                    team2[0]
-                );
-
-                addOpponentRelation(
-                    team1[1],
-                    team2[1]
-                );
-
-            }
-
-
-            // ==========================================
-            // Analyse this simulation
-            // ==========================================
-
-            const doubleCounts =
-                players.map(
-                    player =>
-                        player.doubleGames
-                );
-
-
-            const singleCounts =
-                players.map(
-                    player =>
-                        player.singleGames
-                );
-
-
-            const restCounts =
-                players.map(
-                    player =>
-                        player.rests
-                );
-
-
-            const doubleDifference =
-                Math.max(
-                    ...doubleCounts
-                ) -
-                Math.min(
-                    ...doubleCounts
-                );
-
-
-            const singleDifference =
-                Math.max(
-                    ...singleCounts
-                ) -
-                Math.min(
-                    ...singleCounts
-                );
-
-
-            const restDifference =
-                Math.max(
-                    ...restCounts
-                ) -
-                Math.min(
-                    ...restCounts
-                );
-
-
-            // ------------------------------------------
-            // Partner statistics
-            // ------------------------------------------
-
-            const partnerCounts = [];
-
-
-            players.forEach(
-                player => {
-
-                    Object.values(
-                        player.partners
-                    ).forEach(
-                        count => {
-
-                            partnerCounts.push(
-                                count
-                            );
+                            player.doubleGames++;
 
                         }
                     );
 
+
+                    singlePlayers.forEach(
+                        player => {
+
+                            player.singleGames++;
+
+                        }
+                    );
+
+
+                    restPlayer.rests++;
+
+
+                    /*
+                       Track partners.
+                    */
+
+                    const team1 =
+                        match.double.team1;
+
+                    const team2 =
+                        match.double.team2;
+
+
+                    addPartnerRelation(
+                        team1[0],
+                        team1[1]
+                    );
+
+
+                    addPartnerRelation(
+                        team2[0],
+                        team2[1]
+                    );
+
+
+                    /*
+                       Track opponents.
+                    */
+
+                    addOpponentRelation(
+                        team1[0],
+                        team2[0]
+                    );
+
+
+                    addOpponentRelation(
+                        team1[0],
+                        team2[1]
+                    );
+
+
+                    addOpponentRelation(
+                        team1[1],
+                        team2[0]
+                    );
+
+
+                    addOpponentRelation(
+                        team1[1],
+                        team2[1]
+                    );
+
                 }
+
+
+                /*
+                   Analyse this simulation.
+                */
+
+                const doubleCounts =
+                    players.map(
+                        player =>
+                            player.doubleGames
+                    );
+
+
+                const singleCounts =
+                    players.map(
+                        player =>
+                            player.singleGames
+                    );
+
+
+                const restCounts =
+                    players.map(
+                        player =>
+                            player.rests
+                    );
+
+
+                const doubleDifference =
+                    Math.max(
+                        ...doubleCounts
+                    ) -
+                    Math.min(
+                        ...doubleCounts
+                    );
+
+
+                const singleDifference =
+                    Math.max(
+                        ...singleCounts
+                    ) -
+                    Math.min(
+                        ...singleCounts
+                    );
+
+
+                const restDifference =
+                    Math.max(
+                        ...restCounts
+                    ) -
+                    Math.min(
+                        ...restCounts
+                    );
+
+
+                /*
+                   Partner statistics.
+                */
+
+                const partnerCounts = [];
+
+
+                players.forEach(
+                    player => {
+
+                        Object.values(
+                            player.partners
+                        ).forEach(
+                            count => {
+
+                                partnerCounts.push(
+                                    count
+                                );
+
+                            }
+                        );
+
+                    }
+                );
+
+
+                const partnerDifference =
+                    partnerCounts.length > 0
+
+                        ? Math.max(
+                            ...partnerCounts
+                        ) -
+                        Math.min(
+                            ...partnerCounts
+                        )
+
+                        : 0;
+
+
+                const highestPartnerRepetition =
+                    partnerCounts.length > 0
+
+                        ? Math.max(
+                            ...partnerCounts
+                        )
+
+                        : 0;
+
+
+                /*
+                   Store worst results.
+                */
+
+                worstDoubleDifference =
+                    Math.max(
+                        worstDoubleDifference,
+                        doubleDifference
+                    );
+
+
+                worstSingleDifference =
+                    Math.max(
+                        worstSingleDifference,
+                        singleDifference
+                    );
+
+
+                worstRestDifference =
+                    Math.max(
+                        worstRestDifference,
+                        restDifference
+                    );
+
+
+                worstPartnerDifference =
+                    Math.max(
+                        worstPartnerDifference,
+                        partnerDifference
+                    );
+
+
+                worstPartnerRepetition =
+                    Math.max(
+                        worstPartnerRepetition,
+                        highestPartnerRepetition
+                    );
+
+            }
+
+
+            /*
+               Print result.
+            */
+
+            console.log(
+                `========== ${roundCount} ROUNDS ==========`
             );
 
 
-            const partnerDifference =
-                partnerCounts.length > 0
-                    ? Math.max(
-                        ...partnerCounts
-                    ) -
-                    Math.min(
-                        ...partnerCounts
-                    )
-                    : 0;
+            console.log(
+                "Double difference:",
+                worstDoubleDifference
+            );
 
 
-            const highestPartnerRepetition =
-                partnerCounts.length > 0
-                    ? Math.max(
-                        ...partnerCounts
-                    )
-                    : 0;
+            console.log(
+                "Single difference:",
+                worstSingleDifference
+            );
 
 
-            // ------------------------------------------
-            // Store worst results
-            // ------------------------------------------
-
-            worstDoubleDifference =
-                Math.max(
-                    worstDoubleDifference,
-                    doubleDifference
-                );
+            console.log(
+                "Rest difference:",
+                worstRestDifference
+            );
 
 
-            worstSingleDifference =
-                Math.max(
-                    worstSingleDifference,
-                    singleDifference
-                );
+            console.log(
+                "Partner difference:",
+                worstPartnerDifference
+            );
 
 
-            worstRestDifference =
-                Math.max(
-                    worstRestDifference,
-                    restDifference
-                );
+            console.log(
+                "Highest partner repetition:",
+                worstPartnerRepetition
+            );
 
 
-            worstPartnerDifference =
-                Math.max(
-                    worstPartnerDifference,
-                    partnerDifference
-                );
-
-
-            worstPartnerRepetition =
-                Math.max(
-                    worstPartnerRepetition,
-                    highestPartnerRepetition
-                );
+            console.log("");
 
         }
-
-
-        // ==============================================
-        // Print result
-        // ==============================================
-
-        console.log(
-            `========== ${roundCount} ROUNDS ==========`
-        );
-
-
-        console.log(
-            "Double difference:",
-            worstDoubleDifference
-        );
-
-
-        console.log(
-            "Single difference:",
-            worstSingleDifference
-        );
-
-
-        console.log(
-            "Rest difference:",
-            worstRestDifference
-        );
-
-
-        console.log(
-            "Partner difference:",
-            worstPartnerDifference
-        );
-
-
-        console.log(
-            "Highest partner repetition:",
-            worstPartnerRepetition
-        );
-
-
-        console.log("");
-
-    });
+    );
 
 
     console.log(
         "=========================================="
     );
 
+
     console.log(
         "FAIRNESS TEST COMPLETE"
     );
+
 
     console.log(
         "=========================================="
@@ -2191,9 +2270,9 @@ function runFairnessTest(roundCounts = [7, 14, 21, 28], simulations = 100) {
 }
 
 
-// ==========================================
-// HELPER FUNCTIONS
-// ==========================================
+/* =========================================================
+   FAIRNESS TEST HELPERS
+   ========================================================= */
 
 function addPartnerRelation(
     playerA,
