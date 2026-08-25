@@ -1802,3 +1802,452 @@ document.addEventListener(
 
     }
 );
+
+// ==========================================
+// FAIRNESS TEST
+// ==========================================
+
+function runFairnessTest(roundCounts = [7, 14, 21, 28], simulations = 100) {
+
+    console.log("");
+    console.log("==========================================");
+    console.log("FAIRNESS TEST");
+    console.log("==========================================");
+    console.log(
+        `Running ${simulations} simulations for each round count`
+    );
+    console.log("");
+
+
+    const playerNames = [
+        "Anton",
+        "Næs",
+        "Hans",
+        "Gam",
+        "Legind",
+        "Mølle",
+        "Krelle"
+    ];
+
+
+    roundCounts.forEach(roundCount => {
+
+        let worstDoubleDifference = 0;
+        let worstSingleDifference = 0;
+        let worstRestDifference = 0;
+        let worstPartnerDifference = 0;
+
+        let worstPartnerRepetition = 0;
+
+
+        for (
+            let simulation = 0;
+            simulation < simulations;
+            simulation++
+        ) {
+
+            // ------------------------------------------
+            // Create completely fresh players
+            // ------------------------------------------
+
+            const players =
+                playerNames.map(
+                    (name, index) =>
+                        createPlayer(
+                            index + 1,
+                            name
+                        )
+                );
+
+
+            const tournament = {
+
+                players: players,
+
+                currentRound: 1,
+
+                history: [],
+
+                currentMatches: null
+
+            };
+
+
+            // ------------------------------------------
+            // Generate and record rounds
+            // ------------------------------------------
+
+            for (
+                let round = 1;
+                round <= roundCount;
+                round++
+            ) {
+
+                const match =
+                    generateRound(
+                        tournament
+                    );
+
+
+                /*
+                   We don't need real scores here.
+
+                   We only care about whether the
+                   scheduling algorithm distributes
+                   players fairly.
+                */
+
+                const doublePlayers = [
+
+                    ...match.double.team1,
+
+                    ...match.double.team2
+
+                ];
+
+
+                const singlePlayers = [
+
+                    match.single.player1,
+
+                    match.single.player2
+
+                ];
+
+
+                const restPlayer =
+                    match.rest;
+
+
+                // --------------------------------------
+                // Update participation statistics
+                // --------------------------------------
+
+                doublePlayers.forEach(
+                    player => {
+
+                        player.doubleGames++;
+
+                    }
+                );
+
+
+                singlePlayers.forEach(
+                    player => {
+
+                        player.singleGames++;
+
+                    }
+                );
+
+
+                restPlayer.rests++;
+
+
+                // --------------------------------------
+                // Track partners
+                // --------------------------------------
+
+                const team1 =
+                    match.double.team1;
+
+                const team2 =
+                    match.double.team2;
+
+
+                addPartnerRelation(
+                    team1[0],
+                    team1[1]
+                );
+
+
+                addPartnerRelation(
+                    team2[0],
+                    team2[1]
+                );
+
+
+                // --------------------------------------
+                // Track opponents
+                // --------------------------------------
+
+                addOpponentRelation(
+                    team1[0],
+                    team2[0]
+                );
+
+                addOpponentRelation(
+                    team1[0],
+                    team2[1]
+                );
+
+                addOpponentRelation(
+                    team1[1],
+                    team2[0]
+                );
+
+                addOpponentRelation(
+                    team1[1],
+                    team2[1]
+                );
+
+            }
+
+
+            // ==========================================
+            // Analyse this simulation
+            // ==========================================
+
+            const doubleCounts =
+                players.map(
+                    player =>
+                        player.doubleGames
+                );
+
+
+            const singleCounts =
+                players.map(
+                    player =>
+                        player.singleGames
+                );
+
+
+            const restCounts =
+                players.map(
+                    player =>
+                        player.rests
+                );
+
+
+            const doubleDifference =
+                Math.max(
+                    ...doubleCounts
+                ) -
+                Math.min(
+                    ...doubleCounts
+                );
+
+
+            const singleDifference =
+                Math.max(
+                    ...singleCounts
+                ) -
+                Math.min(
+                    ...singleCounts
+                );
+
+
+            const restDifference =
+                Math.max(
+                    ...restCounts
+                ) -
+                Math.min(
+                    ...restCounts
+                );
+
+
+            // ------------------------------------------
+            // Partner statistics
+            // ------------------------------------------
+
+            const partnerCounts = [];
+
+
+            players.forEach(
+                player => {
+
+                    Object.values(
+                        player.partners
+                    ).forEach(
+                        count => {
+
+                            partnerCounts.push(
+                                count
+                            );
+
+                        }
+                    );
+
+                }
+            );
+
+
+            const partnerDifference =
+                partnerCounts.length > 0
+                    ? Math.max(
+                        ...partnerCounts
+                    ) -
+                    Math.min(
+                        ...partnerCounts
+                    )
+                    : 0;
+
+
+            const highestPartnerRepetition =
+                partnerCounts.length > 0
+                    ? Math.max(
+                        ...partnerCounts
+                    )
+                    : 0;
+
+
+            // ------------------------------------------
+            // Store worst results
+            // ------------------------------------------
+
+            worstDoubleDifference =
+                Math.max(
+                    worstDoubleDifference,
+                    doubleDifference
+                );
+
+
+            worstSingleDifference =
+                Math.max(
+                    worstSingleDifference,
+                    singleDifference
+                );
+
+
+            worstRestDifference =
+                Math.max(
+                    worstRestDifference,
+                    restDifference
+                );
+
+
+            worstPartnerDifference =
+                Math.max(
+                    worstPartnerDifference,
+                    partnerDifference
+                );
+
+
+            worstPartnerRepetition =
+                Math.max(
+                    worstPartnerRepetition,
+                    highestPartnerRepetition
+                );
+
+        }
+
+
+        // ==============================================
+        // Print result
+        // ==============================================
+
+        console.log(
+            `========== ${roundCount} ROUNDS ==========`
+        );
+
+
+        console.log(
+            "Double difference:",
+            worstDoubleDifference
+        );
+
+
+        console.log(
+            "Single difference:",
+            worstSingleDifference
+        );
+
+
+        console.log(
+            "Rest difference:",
+            worstRestDifference
+        );
+
+
+        console.log(
+            "Partner difference:",
+            worstPartnerDifference
+        );
+
+
+        console.log(
+            "Highest partner repetition:",
+            worstPartnerRepetition
+        );
+
+
+        console.log("");
+
+    });
+
+
+    console.log(
+        "=========================================="
+    );
+
+    console.log(
+        "FAIRNESS TEST COMPLETE"
+    );
+
+    console.log(
+        "=========================================="
+    );
+
+}
+
+
+// ==========================================
+// HELPER FUNCTIONS
+// ==========================================
+
+function addPartnerRelation(
+    playerA,
+    playerB
+) {
+
+    if (!playerA.partners) {
+        playerA.partners = {};
+    }
+
+
+    if (!playerB.partners) {
+        playerB.partners = {};
+    }
+
+
+    playerA.partners[playerB.id] =
+        (
+            playerA.partners[playerB.id] || 0
+        ) + 1;
+
+
+    playerB.partners[playerA.id] =
+        (
+            playerB.partners[playerA.id] || 0
+        ) + 1;
+
+}
+
+
+function addOpponentRelation(
+    playerA,
+    playerB
+) {
+
+    if (!playerA.opponents) {
+        playerA.opponents = {};
+    }
+
+
+    if (!playerB.opponents) {
+        playerB.opponents = {};
+    }
+
+
+    playerA.opponents[playerB.id] =
+        (
+            playerA.opponents[playerB.id] || 0
+        ) + 1;
+
+
+    playerB.opponents[playerA.id] =
+        (
+            playerB.opponents[playerA.id] || 0
+        ) + 1;
+
+}
