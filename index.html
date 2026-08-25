@@ -1,62 +1,276 @@
 <!DOCTYPE html>
 <html lang="da">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>Padel Americano</title>
+
     <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
 
-    <h1>Padel Americano</h1>
+    <main class="app">
 
-    <p class="subtitle">
-        7 spillere · 1 doublebane · 1 singlebane
-    </p>
+        <!-- ==========================================
+             START SCREEN
+             ========================================== -->
 
-    <h2>Spillere</h2>
+        <section id="setupScreen">
 
-    <div class="player">
-        <span class="player-number">1.</span>
-        <input type="text" id="player1" placeholder="Navn">
-    </div>
+            <header>
+                <h1>Padel Americano</h1>
 
-    <div class="player">
-        <span class="player-number">2.</span>
-        <input type="text" id="player2" placeholder="Navn">
-    </div>
+                <p class="subtitle">
+                    7 spillere · 1 doublebane · 1 singlebane
+                </p>
+            </header>
 
-    <div class="player">
-        <span class="player-number">3.</span>
-        <input type="text" id="player3" placeholder="Navn">
-    </div>
 
-    <div class="player">
-        <span class="player-number">4.</span>
-        <input type="text" id="player4" placeholder="Navn">
-    </div>
+            <div class="card">
 
-    <div class="player">
-        <span class="player-number">5.</span>
-        <input type="text" id="player5" placeholder="Navn">
-    </div>
+                <h2>Spillere</h2>
 
-    <div class="player">
-        <span class="player-number">6.</span>
-        <input type="text" id="player6" placeholder="Navn">
-    </div>
+                <div class="player-input">
+                    <span>1.</span>
+                    <input
+                        type="text"
+                        id="player1"
+                        placeholder="Navn"
+                    >
+                </div>
 
-    <div class="player">
-        <span class="player-number">7.</span>
-        <input type="text" id="player7" placeholder="Navn">
-    </div>
+                <div class="player-input">
+                    <span>2.</span>
+                    <input
+                        type="text"
+                        id="player2"
+                        placeholder="Navn"
+                    >
+                </div>
 
-    <button class="start-button" onclick="startTournament()">
-        START TURNERING
-    </button>
+                <div class="player-input">
+                    <span>3.</span>
+                    <input
+                        type="text"
+                        id="player3"
+                        placeholder="Navn"
+                    >
+                </div>
+
+                <div class="player-input">
+                    <span>4.</span>
+                    <input
+                        type="text"
+                        id="player4"
+                        placeholder="Navn"
+                    >
+                </div>
+
+                <div class="player-input">
+                    <span>5.</span>
+                    <input
+                        type="text"
+                        id="player5"
+                        placeholder="Navn"
+                    >
+                </div>
+
+                <div class="player-input">
+                    <span>6.</span>
+                    <input
+                        type="text"
+                        id="player6"
+                        placeholder="Navn"
+                    >
+                </div>
+
+                <div class="player-input">
+                    <span>7.</span>
+                    <input
+                        type="text"
+                        id="player7"
+                        placeholder="Navn"
+                    >
+                </div>
+
+
+                <button
+                    class="primary-button"
+                    onclick="startTournament()"
+                >
+                    START TURNERING
+                </button>
+
+            </div>
+
+        </section>
+
+
+        <!-- ==========================================
+             TOURNAMENT SCREEN
+             ========================================== -->
+
+        <section
+            id="tournamentScreen"
+            class="hidden"
+        >
+
+            <header class="tournament-header">
+
+                <div>
+
+                    <p class="round-label">
+                        RUNDE
+                    </p>
+
+                    <h1 id="roundNumber">
+                        1
+                    </h1>
+
+                </div>
+
+                <button
+                    class="secondary-button"
+                    onclick="showSetupScreen()"
+                >
+                    NY TURNERING
+                </button>
+
+            </header>
+
+
+            <!-- DOUBLE -->
+
+            <div class="match-card">
+
+                <div class="match-header">
+
+                    <div>
+                        <span class="match-type">
+                            DOUBLE
+                        </span>
+
+                        <span class="points-label">
+                            32 POINT
+                        </span>
+                    </div>
+
+                </div>
+
+
+                <div class="match">
+
+                    <div
+                        class="team"
+                        id="doubleTeam1"
+                    >
+                        -
+                    </div>
+
+
+                    <div class="vs">
+                        VS
+                    </div>
+
+
+                    <div
+                        class="team"
+                        id="doubleTeam2"
+                    >
+                        -
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- SINGLE -->
+
+            <div class="match-card">
+
+                <div class="match-header">
+
+                    <div>
+                        <span class="match-type">
+                            SINGLE
+                        </span>
+
+                        <span class="points-label">
+                            32 POINT
+                        </span>
+                    </div>
+
+                </div>
+
+
+                <div class="match single-match">
+
+                    <div
+                        class="team"
+                        id="singlePlayer1"
+                    >
+                        -
+                    </div>
+
+
+                    <div class="vs">
+                        VS
+                    </div>
+
+
+                    <div
+                        class="team"
+                        id="singlePlayer2"
+                    >
+                        -
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- REST -->
+
+            <div class="rest-card">
+
+                <span class="rest-icon">
+                    ☕
+                </span>
+
+                <div>
+
+                    <span class="rest-label">
+                        PAUSE
+                    </span>
+
+                    <strong id="restPlayer">
+                        -
+                    </strong>
+
+                </div>
+
+            </div>
+
+
+            <button
+                class="primary-button next-button"
+                onclick="showComingSoon()"
+            >
+                RESULTAT
+            </button>
+
+        </section>
+
+    </main>
+
 
     <script src="script.js"></script>
 
 </body>
+
 </html>
