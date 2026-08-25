@@ -1,3 +1,17 @@
+function saveTournament(tournament) {
+    localStorage.setItem("padelTournament", JSON.stringify(tournament));
+}
+
+function loadTournament() {
+    const data = localStorage.getItem("padelTournament");
+
+    if (!data) {
+        return null;
+    }
+
+    return JSON.parse(data);
+}
+
 function startTournament() {
     const players = [];
 
@@ -9,10 +23,24 @@ function startTournament() {
             return;
         }
 
-        players.push(name);
+        players.push({
+            id: i,
+            name: name,
+            points: 0,
+            doubleGames: 0,
+            singleGames: 0,
+            rests: 0
+        });
     }
 
-    localStorage.setItem("padelPlayers", JSON.stringify(players));
+    const tournament = {
+        players: players,
+        currentRound: 1,
+        history: [],
+        currentMatches: null
+    };
+
+    saveTournament(tournament);
 
     alert("Turnering oprettet!");
 }
