@@ -15,7 +15,7 @@
     <main class="app">
 
         <!-- ==========================================
-             START SCREEN
+             SETUP
              ========================================== -->
 
         <section id="setupScreen">
@@ -35,65 +35,37 @@
 
                 <div class="player-input">
                     <span>1.</span>
-                    <input
-                        type="text"
-                        id="player1"
-                        placeholder="Navn"
-                    >
+                    <input type="text" id="player1" placeholder="Navn">
                 </div>
 
                 <div class="player-input">
                     <span>2.</span>
-                    <input
-                        type="text"
-                        id="player2"
-                        placeholder="Navn"
-                    >
+                    <input type="text" id="player2" placeholder="Navn">
                 </div>
 
                 <div class="player-input">
                     <span>3.</span>
-                    <input
-                        type="text"
-                        id="player3"
-                        placeholder="Navn"
-                    >
+                    <input type="text" id="player3" placeholder="Navn">
                 </div>
 
                 <div class="player-input">
                     <span>4.</span>
-                    <input
-                        type="text"
-                        id="player4"
-                        placeholder="Navn"
-                    >
+                    <input type="text" id="player4" placeholder="Navn">
                 </div>
 
                 <div class="player-input">
                     <span>5.</span>
-                    <input
-                        type="text"
-                        id="player5"
-                        placeholder="Navn"
-                    >
+                    <input type="text" id="player5" placeholder="Navn">
                 </div>
 
                 <div class="player-input">
                     <span>6.</span>
-                    <input
-                        type="text"
-                        id="player6"
-                        placeholder="Navn"
-                    >
+                    <input type="text" id="player6" placeholder="Navn">
                 </div>
 
                 <div class="player-input">
                     <span>7.</span>
-                    <input
-                        type="text"
-                        id="player7"
-                        placeholder="Navn"
-                    >
+                    <input type="text" id="player7" placeholder="Navn">
                 </div>
 
 
@@ -110,7 +82,7 @@
 
 
         <!-- ==========================================
-             TOURNAMENT SCREEN
+             TOURNAMENT
              ========================================== -->
 
         <section
@@ -142,7 +114,9 @@
             </header>
 
 
-            <!-- DOUBLE -->
+            <!-- ======================================
+                 DOUBLE
+                 ====================================== -->
 
             <div class="match-card">
 
@@ -171,8 +145,26 @@
                     </div>
 
 
-                    <div class="vs">
-                        VS
+                    <div class="score-input">
+
+                        <input
+                            type="number"
+                            id="doubleScore1"
+                            min="0"
+                            max="32"
+                            placeholder="0"
+                        >
+
+                        <span>–</span>
+
+                        <input
+                            type="number"
+                            id="doubleScore2"
+                            min="0"
+                            max="32"
+                            placeholder="0"
+                        >
+
                     </div>
 
 
@@ -188,7 +180,9 @@
             </div>
 
 
-            <!-- SINGLE -->
+            <!-- ======================================
+                 SINGLE
+                 ====================================== -->
 
             <div class="match-card">
 
@@ -207,7 +201,7 @@
                 </div>
 
 
-                <div class="match single-match">
+                <div class="match">
 
                     <div
                         class="team"
@@ -217,8 +211,26 @@
                     </div>
 
 
-                    <div class="vs">
-                        VS
+                    <div class="score-input">
+
+                        <input
+                            type="number"
+                            id="singleScore1"
+                            min="0"
+                            max="32"
+                            placeholder="0"
+                        >
+
+                        <span>–</span>
+
+                        <input
+                            type="number"
+                            id="singleScore2"
+                            min="0"
+                            max="32"
+                            placeholder="0"
+                        >
+
                     </div>
 
 
@@ -234,7 +246,9 @@
             </div>
 
 
-            <!-- REST -->
+            <!-- ======================================
+                 REST
+                 ====================================== -->
 
             <div class="rest-card">
 
@@ -257,12 +271,34 @@
             </div>
 
 
+            <!-- ======================================
+                 SAVE ROUND
+                 ====================================== -->
+
             <button
                 class="primary-button next-button"
-                onclick="showComingSoon()"
+                onclick="submitRound()"
             >
-                RESULTAT
+                GEM RUNDE
             </button>
+
+
+            <!-- ======================================
+                 LEADERBOARD
+                 ====================================== -->
+
+            <div
+                id="leaderboard"
+                class="leaderboard"
+            >
+
+                <h2>
+                    Stillingen
+                </h2>
+
+                <div id="leaderboardList"></div>
+
+            </div>
 
         </section>
 
