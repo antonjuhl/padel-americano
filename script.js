@@ -1,8 +1,5 @@
 /* =========================================================
    PADEL AMERICANO
-   7 PLAYERS
-   1 DOUBLE COURT
-   1 SINGLE COURT
    ========================================================= */
 
 
@@ -11,6 +8,7 @@
    ========================================================= */
 
 function saveTournament(tournament) {
+
     localStorage.setItem(
         "padelTournament",
         JSON.stringify(tournament)
@@ -21,7 +19,9 @@ function saveTournament(tournament) {
 function loadTournament() {
 
     const data =
-        localStorage.getItem("padelTournament");
+        localStorage.getItem(
+            "padelTournament"
+        );
 
     if (!data) {
         return null;
@@ -32,7 +32,36 @@ function loadTournament() {
 
 
 /* =========================================================
-   BASIC HELPERS
+   PLAYER
+   ========================================================= */
+
+function createPlayer(id, name) {
+
+    return {
+
+        id: id,
+
+        name: name,
+
+        points: 0,
+
+        doubleGames: 0,
+
+        singleGames: 0,
+
+        rests: 0,
+
+        partners: {},
+
+        opponents: {}
+
+    };
+
+}
+
+
+/* =========================================================
+   HELPERS
    ========================================================= */
 
 function shuffle(array) {
@@ -57,72 +86,52 @@ function shuffle(array) {
             copy[j],
             copy[i]
         ];
+
     }
 
     return copy;
-}
 
-
-function createPlayer(id, name) {
-
-    return {
-
-        id: id,
-
-        name: name,
-
-        points: 0,
-
-        doubleGames: 0,
-
-        singleGames: 0,
-
-        rests: 0,
-
-        partners: {},
-
-        opponents: {}
-    };
 }
 
 
 function getPartnerCount(
     player,
-    otherPlayerId
+    id
 ) {
 
-    return (
-        player.partners[otherPlayerId] || 0
-    );
+    return player.partners[id] || 0;
+
 }
 
 
 function getOpponentCount(
     player,
-    otherPlayerId
+    id
 ) {
 
-    return (
-        player.opponents[otherPlayerId] || 0
-    );
+    return player.opponents[id] || 0;
+
 }
 
 
 function incrementHistory(
     object,
-    playerId
+    id
 ) {
 
-    if (!object[playerId]) {
-        object[playerId] = 0;
+    if (!object[id]) {
+
+        object[id] = 0;
+
     }
 
-    object[playerId]++;
+    object[id]++;
+
 }
 
 
 /* =========================================================
-   PARTNER HISTORY
+   PARTNER RECENCY
    ========================================================= */
 
 function roundsSincePartners(
@@ -143,6 +152,7 @@ function roundsSincePartners(
         const round =
             tournament.history[i];
 
+
         const teams = [
 
             round.double.team1,
@@ -151,18 +161,21 @@ function roundsSincePartners(
 
         ];
 
+
         const werePartners =
-            teams.some(team => {
+            teams.some(
+                team =>
 
-                return (
+                    team.includes(
+                        playerA.id
+                    )
 
-                    team.includes(playerA.id) &&
+                    &&
 
-                    team.includes(playerB.id)
-
-                );
-
-            });
+                    team.includes(
+                        playerB.id
+                    )
+            );
 
 
         if (werePartners) {
@@ -176,7 +189,8 @@ function roundsSincePartners(
     }
 
 
-    return 0;
+    return 999;
+
 }
 
 
@@ -191,112 +205,101 @@ function calculateBalanceScore(
 
     let score = 0;
 
+
     const totalRounds =
-        tournament.history.length;
+        tournament.history.length + 1;
 
-
-    /*
-    Ideal distribution:
-
-    4 / 7 = double
-    2 / 7 = single
-    1 / 7 = rest
-    */
 
     const expectedDouble =
-        (totalRounds + 1) *
-        (4 / 7);
+        totalRounds * 4 / 7;
+
 
     const expectedSingle =
-        (totalRounds + 1) *
-        (2 / 7);
+        totalRounds * 2 / 7;
+
 
     const expectedRest =
-        (totalRounds + 1) *
-        (1 / 7);
+        totalRounds * 1 / 7;
 
 
     tournament.players.forEach(
         player => {
 
-            let futureDouble =
+            let doubles =
                 player.doubleGames;
 
-            let futureSingle =
+            let singles =
                 player.singleGames;
 
-            let futureRest =
+            let rests =
                 player.rests;
 
 
-            const isDouble =
+            if (
 
-                round.double.team1.includes(player) ||
+                round.double.team1.includes(player)
 
-                round.double.team2.includes(player);
+                ||
 
+                round.double.team2.includes(player)
 
-            const isSingle =
+            ) {
 
-                round.single.player1 === player ||
+                doubles++;
 
-                round.single.player2 === player;
-
-
-            const isRest =
-                round.rest === player;
-
-
-            if (isDouble) {
-                futureDouble++;
-            }
-
-            if (isSingle) {
-                futureSingle++;
-            }
-
-            if (isRest) {
-                futureRest++;
             }
 
 
-            const doubleDifference =
-                futureDouble -
-                expectedDouble;
+            if (
+
+                round.single.player1 === player
+
+                ||
+
+                round.single.player2 === player
+
+            ) {
+
+                singles++;
+
+            }
 
 
-            const singleDifference =
-                futureSingle -
-                expectedSingle;
+            if (
+                round.rest === player
+            ) {
 
+                rests++;
 
-            const restDifference =
-                futureRest -
-                expectedRest;
-
-
-            score +=
-                doubleDifference *
-                doubleDifference *
-                100;
-
-
-            score +=
-                singleDifference *
-                singleDifference *
-                100;
+            }
 
 
             score +=
-                restDifference *
-                restDifference *
-                150;
+                Math.pow(
+                    doubles - expectedDouble,
+                    2
+                ) * 100;
+
+
+            score +=
+                Math.pow(
+                    singles - expectedSingle,
+                    2
+                ) * 100;
+
+
+            score +=
+                Math.pow(
+                    rests - expectedRest,
+                    2
+                ) * 150;
 
         }
     );
 
 
     return score;
+
 }
 
 
@@ -321,69 +324,71 @@ function calculatePartnerScore(
     ];
 
 
-    teams.forEach(team => {
+    teams.forEach(
+        team => {
 
-        const playerA = team[0];
+            const a = team[0];
 
-        const playerB = team[1];
-
-
-        /*
-        TOTAL NUMBER OF TIMES
-        THEY HAVE ALREADY BEEN PARTNERS
-        */
-
-        const previousCount =
-            getPartnerCount(
-                playerA,
-                playerB.id
-            );
+            const b = team[1];
 
 
-        score +=
-            previousCount * 150;
+            const previous =
+                getPartnerCount(
+                    a,
+                    b.id
+                );
 
 
-        /*
-        HOW RECENTLY WERE THEY PARTNERS?
-        */
-
-        const roundsSince =
-            roundsSincePartners(
-                tournament,
-                playerA,
-                playerB
-            );
+            score +=
+                previous * 150;
 
 
-        if (roundsSince === 1) {
+            const recent =
+                roundsSincePartners(
+                    tournament,
+                    a,
+                    b
+                );
 
-            score += 5000;
 
-        } else if (
-            roundsSince === 2
-        ) {
+            if (
+                recent === 1
+            ) {
 
-            score += 1000;
+                score += 5000;
 
-        } else if (
-            roundsSince === 3
-        ) {
+            }
 
-            score += 300;
+            else if (
+                recent === 2
+            ) {
 
-        } else if (
-            roundsSince === 4
-        ) {
+                score += 1000;
 
-            score += 100;
+            }
+
+            else if (
+                recent === 3
+            ) {
+
+                score += 300;
+
+            }
+
+            else if (
+                recent === 4
+            ) {
+
+                score += 100;
+
+            }
 
         }
-
-    });
+    );
 
 
     return score;
+
 }
 
 
@@ -398,20 +403,16 @@ function calculateOpponentScore(
     let score = 0;
 
 
-    /*
-    DOUBLE VS DOUBLE
-    */
-
     round.double.team1.forEach(
-        player1 => {
+        a => {
 
             round.double.team2.forEach(
-                player2 => {
+                b => {
 
                     score +=
                         getOpponentCount(
-                            player1,
-                            player2.id
+                            a,
+                            b.id
                         ) * 20;
 
                 }
@@ -421,12 +422,7 @@ function calculateOpponentScore(
     );
 
 
-    /*
-    SINGLE VS SINGLE
-    */
-
     score +=
-
         getOpponentCount(
             round.single.player1,
             round.single.player2.id
@@ -434,22 +430,12 @@ function calculateOpponentScore(
 
 
     return score;
-}
-
-
-/* =========================================================
-   RANDOMNESS
-   ========================================================= */
-
-function calculateRandomness() {
-
-    return Math.random() * 5;
 
 }
 
 
 /* =========================================================
-   TOTAL ROUND SCORE
+   ROUND SCORE
    ========================================================= */
 
 function scoreRound(
@@ -457,39 +443,37 @@ function scoreRound(
     round
 ) {
 
-    let score = 0;
+    return (
 
-
-    score +=
         calculateBalanceScore(
             tournament,
             round
-        );
+        )
 
+        +
 
-    score +=
         calculatePartnerScore(
             tournament,
             round
-        );
+        )
 
+        +
 
-    score +=
         calculateOpponentScore(
             round
-        );
+        )
 
+        +
 
-    score +=
-        calculateRandomness();
+        Math.random() * 5
 
+    );
 
-    return score;
 }
 
 
 /* =========================================================
-   GENERATE CANDIDATE ROUND
+   GENERATE CANDIDATE
    ========================================================= */
 
 function generateCandidateRound(
@@ -507,23 +491,16 @@ function generateCandidateRound(
         double: {
 
             team1: [
-
                 players[0],
-
                 players[1]
-
             ],
 
             team2: [
-
                 players[2],
-
                 players[3]
-
             ]
 
         },
-
 
         single: {
 
@@ -535,7 +512,6 @@ function generateCandidateRound(
 
         },
 
-
         rest:
             players[6]
 
@@ -545,7 +521,7 @@ function generateCandidateRound(
 
 
 /* =========================================================
-   GENERATE BEST ROUND
+   GENERATE ROUND
    ========================================================= */
 
 function generateRound(
@@ -557,14 +533,9 @@ function generateRound(
     let bestScore = Infinity;
 
 
-    const attempts = 1000;
-
-
     for (
         let i = 0;
-
-        i < attempts;
-
+        i < 1000;
         i++
     ) {
 
@@ -582,8 +553,7 @@ function generateRound(
 
 
         if (
-            score <
-            bestScore
+            score < bestScore
         ) {
 
             bestScore =
@@ -597,19 +567,8 @@ function generateRound(
     }
 
 
-    console.log(
-        "Valgt runde:",
-        bestRound
-    );
-
-
-    console.log(
-        "Fairness score:",
-        bestScore
-    );
-
-
     return bestRound;
+
 }
 
 
@@ -624,27 +583,27 @@ function recordRound(
     singleScore
 ) {
 
-    const doubleTeam1 =
+    const team1 =
         round.double.team1;
 
-    const doubleTeam2 =
+    const team2 =
         round.double.team2;
 
-    const singlePlayer1 =
+
+    const single1 =
         round.single.player1;
 
-    const singlePlayer2 =
+    const single2 =
         round.single.player2;
 
-    const restPlayer =
+
+    const rest =
         round.rest;
 
 
-    /*
-    DOUBLE
-    */
+    /* DOUBLE POINTS */
 
-    doubleTeam1.forEach(
+    team1.forEach(
         player => {
 
             player.points +=
@@ -656,7 +615,7 @@ function recordRound(
     );
 
 
-    doubleTeam2.forEach(
+    team2.forEach(
         player => {
 
             player.points +=
@@ -668,71 +627,64 @@ function recordRound(
     );
 
 
-    /*
-    SINGLE
+    /* SINGLE POINTS */
 
-    SINGLE IS ALSO 32 POINTS TOTAL
-    */
-
-    singlePlayer1.points +=
+    single1.points +=
         singleScore.player1;
 
-    singlePlayer1.singleGames++;
+    single1.singleGames++;
 
 
-    singlePlayer2.points +=
+    single2.points +=
         singleScore.player2;
 
-    singlePlayer2.singleGames++;
+    single2.singleGames++;
 
 
-    /*
-    REST
-    */
+    /* REST */
 
-    restPlayer.rests++;
+    rest.rests++;
 
 
-    /*
-    PARTNERS
-    */
+    /* PARTNERS */
 
     incrementHistory(
-        doubleTeam1[0].partners,
-        doubleTeam1[1].id
-    );
-
-    incrementHistory(
-        doubleTeam1[1].partners,
-        doubleTeam1[0].id
+        team1[0].partners,
+        team1[1].id
     );
 
 
     incrementHistory(
-        doubleTeam2[0].partners,
-        doubleTeam2[1].id
+        team1[1].partners,
+        team1[0].id
     );
+
 
     incrementHistory(
-        doubleTeam2[1].partners,
-        doubleTeam2[0].id
+        team2[0].partners,
+        team2[1].id
     );
 
 
-    /*
-    DOUBLE OPPONENTS
-    */
+    incrementHistory(
+        team2[1].partners,
+        team2[0].id
+    );
 
-    doubleTeam1.forEach(
+
+    /* DOUBLE OPPONENTS */
+
+    team1.forEach(
         player1 => {
 
-            doubleTeam2.forEach(
+            team2.forEach(
                 player2 => {
 
                     incrementHistory(
                         player1.opponents,
                         player2.id
                     );
+
 
                     incrementHistory(
                         player2.opponents,
@@ -746,40 +698,36 @@ function recordRound(
     );
 
 
-    /*
-    SINGLE OPPONENTS
-    */
+    /* SINGLE OPPONENTS */
 
     incrementHistory(
-        singlePlayer1.opponents,
-        singlePlayer2.id
-    );
-
-    incrementHistory(
-        singlePlayer2.opponents,
-        singlePlayer1.id
+        single1.opponents,
+        single2.id
     );
 
 
-    /*
-    SAVE ROUND TO HISTORY
-    */
+    incrementHistory(
+        single2.opponents,
+        single1.id
+    );
+
+
+    /* HISTORY */
 
     tournament.history.push({
 
         round:
             tournament.currentRound,
 
-
         double: {
 
             team1:
-                doubleTeam1.map(
+                team1.map(
                     player => player.id
                 ),
 
             team2:
-                doubleTeam2.map(
+                team2.map(
                     player => player.id
                 ),
 
@@ -795,14 +743,13 @@ function recordRound(
 
         },
 
-
         single: {
 
             player1:
-                singlePlayer1.id,
+                single1.id,
 
             player2:
-                singlePlayer2.id,
+                single2.id,
 
             score: {
 
@@ -816,9 +763,8 @@ function recordRound(
 
         },
 
-
         rest:
-            restPlayer.id
+            rest.id
 
     });
 
@@ -826,8 +772,7 @@ function recordRound(
     tournament.currentRound++;
 
 
-    tournament.currentMatches =
-        null;
+    tournament.currentMatches = null;
 
 
     saveTournament(
@@ -838,7 +783,7 @@ function recordRound(
 
 
 /* =========================================================
-   START TOURNAMENT
+   START
    ========================================================= */
 
 function startTournament() {
@@ -848,9 +793,7 @@ function startTournament() {
 
     for (
         let i = 1;
-
         i <= 7;
-
         i++
     ) {
 
@@ -864,9 +807,7 @@ function startTournament() {
             input.value.trim();
 
 
-        if (
-            name === ""
-        ) {
+        if (!name) {
 
             alert(
                 `Skriv et navn på spiller ${i}`
@@ -890,6 +831,7 @@ function startTournament() {
     const tournament = {
 
         players:
+
             players,
 
         currentRound:
@@ -904,10 +846,6 @@ function startTournament() {
     };
 
 
-    /*
-    GENERATE FIRST ROUND
-    */
-
     tournament.currentMatches =
         generateRound(
             tournament
@@ -915,12 +853,6 @@ function startTournament() {
 
 
     saveTournament(
-        tournament
-    );
-
-
-    console.log(
-        "Turnering startet:",
         tournament
     );
 
@@ -933,33 +865,29 @@ function startTournament() {
 
 
 /* =========================================================
-   SHOW TOURNAMENT SCREEN
+   SHOW TOURNAMENT
    ========================================================= */
 
 function showTournamentScreen(
     tournament
 ) {
 
-    const setupScreen =
-        document.getElementById(
+    document
+        .getElementById(
             "setupScreen"
+        )
+        .classList.add(
+            "hidden"
         );
 
 
-    const tournamentScreen =
-        document.getElementById(
+    document
+        .getElementById(
             "tournamentScreen"
+        )
+        .classList.remove(
+            "hidden"
         );
-
-
-    setupScreen.classList.add(
-        "hidden"
-    );
-
-
-    tournamentScreen.classList.remove(
-        "hidden"
-    );
 
 
     renderRound(
@@ -977,11 +905,6 @@ function renderRound(
     tournament
 ) {
 
-    /*
-    If there isn't a current round,
-    generate one.
-    */
-
     if (
         !tournament.currentMatches
     ) {
@@ -990,7 +913,6 @@ function renderRound(
             generateRound(
                 tournament
             );
-
 
         saveTournament(
             tournament
@@ -1003,19 +925,11 @@ function renderRound(
         tournament.currentMatches;
 
 
-    /*
-    ROUND NUMBER
-    */
-
     document.getElementById(
         "roundNumber"
     ).textContent =
         tournament.currentRound;
 
-
-    /*
-    DOUBLE TEAM 1
-    */
 
     document.getElementById(
         "doubleTeam1"
@@ -1023,14 +937,11 @@ function renderRound(
 
         round.double.team1
             .map(
-                player => player.name
+                player =>
+                    player.name
             )
             .join(" + ");
 
-
-    /*
-    DOUBLE TEAM 2
-    */
 
     document.getElementById(
         "doubleTeam2"
@@ -1038,14 +949,11 @@ function renderRound(
 
         round.double.team2
             .map(
-                player => player.name
+                player =>
+                    player.name
             )
             .join(" + ");
 
-
-    /*
-    SINGLE PLAYER 1
-    */
 
     document.getElementById(
         "singlePlayer1"
@@ -1053,33 +961,54 @@ function renderRound(
         round.single.player1.name;
 
 
-    /*
-    SINGLE PLAYER 2
-    */
-
     document.getElementById(
         "singlePlayer2"
     ).textContent =
         round.single.player2.name;
 
 
-    /*
-    REST
-    */
-
     document.getElementById(
         "restPlayer"
     ).textContent =
         round.rest.name;
 
+
+    /*
+    CLEAR OLD SCORES
+    */
+
+    document.getElementById(
+        "doubleScore1"
+    ).value = "";
+
+
+    document.getElementById(
+        "doubleScore2"
+    ).value = "";
+
+
+    document.getElementById(
+        "singleScore1"
+    ).value = "";
+
+
+    document.getElementById(
+        "singleScore2"
+    ).value = "";
+
+
+    renderLeaderboard(
+        tournament
+    );
+
 }
 
 
 /* =========================================================
-   LOAD EXISTING TOURNAMENT
+   SUBMIT ROUND
    ========================================================= */
 
-function loadExistingTournament() {
+function submitRound() {
 
     const tournament =
         loadTournament();
@@ -1089,53 +1018,305 @@ function loadExistingTournament() {
         !tournament
     ) {
 
+        alert(
+            "Ingen aktiv turnering."
+        );
+
+        return;
+
+    }
+
+
+    const doubleScore1 =
+        Number(
+            document.getElementById(
+                "doubleScore1"
+            ).value
+        );
+
+
+    const doubleScore2 =
+        Number(
+            document.getElementById(
+                "doubleScore2"
+            ).value
+        );
+
+
+    const singleScore1 =
+        Number(
+            document.getElementById(
+                "singleScore1"
+            ).value
+        );
+
+
+    const singleScore2 =
+        Number(
+            document.getElementById(
+                "singleScore2"
+            ).value
+        );
+
+
+    /*
+    CHECK THAT ALL FIELDS ARE FILLED
+    */
+
+    if (
+
+        document.getElementById(
+            "doubleScore1"
+        ).value === ""
+
+        ||
+
+        document.getElementById(
+            "doubleScore2"
+        ).value === ""
+
+        ||
+
+        document.getElementById(
+            "singleScore1"
+        ).value === ""
+
+        ||
+
+        document.getElementById(
+            "singleScore2"
+        ).value === ""
+
+    ) {
+
+        alert(
+            "Indtast resultatet for begge kampe."
+        );
+
         return;
 
     }
 
 
     /*
-    If the tournament exists but
-    doesn't have a current round,
-    generate one.
+    CHECK DOUBLE = 32
     */
 
     if (
-        !tournament.currentMatches
+        doubleScore1 +
+        doubleScore2 !== 32
     ) {
 
-        tournament.currentMatches =
-            generateRound(
-                tournament
-            );
-
-        saveTournament(
-            tournament
+        alert(
+            "Double-resultatet skal give præcis 32 point i alt."
         );
+
+        return;
 
     }
 
 
-    showTournamentScreen(
+    /*
+    CHECK SINGLE = 32
+    */
+
+    if (
+        singleScore1 +
+        singleScore2 !== 32
+    ) {
+
+        alert(
+            "Single-resultatet skal give præcis 32 point i alt."
+        );
+
+        return;
+
+    }
+
+
+    /*
+    CHECK RANGE
+    */
+
+    const scores = [
+
+        doubleScore1,
+        doubleScore2,
+        singleScore1,
+        singleScore2
+
+    ];
+
+
+    if (
+        scores.some(
+            score =>
+                score < 0 ||
+                score > 32
+        )
+    ) {
+
+        alert(
+            "Point skal være mellem 0 og 32."
+        );
+
+        return;
+
+    }
+
+
+    /*
+    RECORD
+    */
+
+    recordRound(
+
+        tournament,
+
+        tournament.currentMatches,
+
+        {
+
+            team1:
+                doubleScore1,
+
+            team2:
+                doubleScore2
+
+        },
+
+        {
+
+            player1:
+                singleScore1,
+
+            player2:
+                singleScore2
+
+        }
+
+    );
+
+
+    /*
+    GENERATE NEXT ROUND
+    */
+
+    tournament.currentMatches =
+        generateRound(
+            tournament
+        );
+
+
+    saveTournament(
         tournament
+    );
+
+
+    /*
+    SHOW NEXT ROUND
+    */
+
+    renderRound(
+        tournament
+    );
+
+
+    /*
+    SCROLL TO TOP
+    */
+
+    window.scrollTo(
+        0,
+        0
     );
 
 }
 
 
 /* =========================================================
-   SHOW SETUP SCREEN
+   LEADERBOARD
+   ========================================================= */
+
+function renderLeaderboard(
+    tournament
+) {
+
+    const container =
+        document.getElementById(
+            "leaderboardList"
+        );
+
+
+    if (
+        !container
+    ) {
+
+        return;
+
+    }
+
+
+    const players =
+        [...tournament.players]
+            .sort(
+                (a, b) =>
+                    b.points - a.points
+            );
+
+
+    container.innerHTML = "";
+
+
+    players.forEach(
+        (player, index) => {
+
+            const row =
+                document.createElement(
+                    "div"
+                );
+
+
+            row.className =
+                "leaderboard-row";
+
+
+            row.innerHTML = `
+
+                <span class="leaderboard-position">
+                    ${index + 1}
+                </span>
+
+                <span class="leaderboard-name">
+                    ${player.name}
+                </span>
+
+                <span class="leaderboard-points">
+                    ${player.points}
+                </span>
+
+            `;
+
+
+            container.appendChild(
+                row
+            );
+
+        }
+    );
+
+}
+
+
+/* =========================================================
+   NEW TOURNAMENT
    ========================================================= */
 
 function showSetupScreen() {
 
-    const tournament =
-        loadTournament();
-
-
     const confirmed =
         confirm(
-            "Er du sikker på, at du vil starte en ny turnering? Den nuværende turnering bliver ikke slettet, men siden nulstilles."
+            "Vil du starte en ny turnering? Den nuværende turnering bliver slettet."
         );
 
 
@@ -1144,37 +1325,46 @@ function showSetupScreen() {
     }
 
 
-    document.getElementById(
-        "tournamentScreen"
-    ).classList.add(
-        "hidden"
+    localStorage.removeItem(
+        "padelTournament"
     );
 
 
-    document.getElementById(
-        "setupScreen"
-    ).classList.remove(
-        "hidden"
-    );
+    document
+        .getElementById(
+            "tournamentScreen"
+        )
+        .classList.add(
+            "hidden"
+        );
+
+
+    document
+        .getElementById(
+            "setupScreen"
+        )
+        .classList.remove(
+            "hidden"
+        );
+
+
+    for (
+        let i = 1;
+        i <= 7;
+        i++
+    ) {
+
+        document.getElementById(
+            `player${i}`
+        ).value = "";
+
+    }
 
 }
 
 
 /* =========================================================
-   TEMPORARY RESULT BUTTON
-   ========================================================= */
-
-function showComingSoon() {
-
-    alert(
-        "Resultatfunktionen bygger vi i næste step 😎"
-    );
-
-}
-
-
-/* =========================================================
-   SIMULATOR
+   SIMULATION
    ========================================================= */
 
 function simulateTournament(
@@ -1183,57 +1373,26 @@ function simulateTournament(
 
     const players = [
 
-        createPlayer(
-            1,
-            "Anton"
-        ),
-
-        createPlayer(
-            2,
-            "Næs"
-        ),
-
-        createPlayer(
-            3,
-            "Hans"
-        ),
-
-        createPlayer(
-            4,
-            "Gam"
-        ),
-
-        createPlayer(
-            5,
-            "Legind"
-        ),
-
-        createPlayer(
-            6,
-            "Mølle"
-        ),
-
-        createPlayer(
-            7,
-            "Krelle"
-        )
+        createPlayer(1, "Anton"),
+        createPlayer(2, "Næs"),
+        createPlayer(3, "Hans"),
+        createPlayer(4, "Gam"),
+        createPlayer(5, "Legind"),
+        createPlayer(6, "Mølle"),
+        createPlayer(7, "Krelle")
 
     ];
 
 
     const simulation = {
 
-        players:
-            players,
+        players,
 
-        currentRound:
-            1,
+        currentRound: 1,
 
-        history:
-            [],
+        history: [],
 
-        currentMatches:
-            null
+        currentMatches: null
 
     };
 
@@ -1259,13 +1418,19 @@ function simulateTournament(
             round,
 
             {
+
                 team1: 16,
+
                 team2: 16
+
             },
 
             {
+
                 player1: 16,
+
                 player2: 16
+
             }
 
         );
@@ -1274,21 +1439,12 @@ function simulateTournament(
 
 
     console.log(
-        "=============================="
-    );
-
-
-    console.log(
         `SIMULATION: ${numberOfRounds} ROUNDS`
     );
 
 
-    console.log(
-        "=============================="
-    );
+    console.table(
 
-
-    const results =
         simulation.players.map(
             player => ({
 
@@ -1305,71 +1461,50 @@ function simulateTournament(
                     player.rests
 
             })
-        );
+        )
 
-
-    console.table(
-        results
     );
 
 
-    const doubleValues =
+    const doubles =
         simulation.players.map(
-            player =>
-                player.doubleGames
+            p => p.doubleGames
         );
 
 
-    const singleValues =
+    const singles =
         simulation.players.map(
-            player =>
-                player.singleGames
+            p => p.singleGames
         );
 
 
-    const restValues =
+    const rests =
         simulation.players.map(
-            player =>
-                player.rests
+            p => p.rests
         );
 
 
     console.log(
         "DOUBLE difference:",
 
-        Math.max(
-            ...doubleValues
-        ) -
-
-        Math.min(
-            ...doubleValues
-        )
+        Math.max(...doubles) -
+        Math.min(...doubles)
     );
 
 
     console.log(
         "SINGLE difference:",
 
-        Math.max(
-            ...singleValues
-        ) -
-
-        Math.min(
-            ...singleValues
-        )
+        Math.max(...singles) -
+        Math.min(...singles)
     );
 
 
     console.log(
         "REST difference:",
 
-        Math.max(
-            ...restValues
-        ) -
-
-        Math.min(
-            ...restValues
-        )
+        Math.max(...rests) -
+        Math.min(...rests)
     );
 
 
@@ -1401,15 +1536,11 @@ function simulateTournament(
             ).forEach(
                 count => {
 
-                    if (
-                        count >
-                        highestPartnerCount
-                    ) {
-
-                        highestPartnerCount =
-                            count;
-
-                    }
+                    highestPartnerCount =
+                        Math.max(
+                            highestPartnerCount,
+                            count
+                        );
 
                 }
             );
@@ -1430,7 +1561,7 @@ function simulateTournament(
 
 
 /* =========================================================
-   INITIAL PAGE LOAD
+   LOAD ON PAGE START
    ========================================================= */
 
 document.addEventListener(
@@ -1442,8 +1573,7 @@ document.addEventListener(
 
 
         if (
-            tournament &&
-            tournament.currentMatches
+            tournament
         ) {
 
             showTournamentScreen(
