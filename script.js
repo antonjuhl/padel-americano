@@ -2,6 +2,7 @@ function saveTournament(tournament) {
     localStorage.setItem("padelTournament", JSON.stringify(tournament));
 }
 
+
 function loadTournament() {
     const data = localStorage.getItem("padelTournament");
 
@@ -67,6 +68,20 @@ function generateRound(tournament) {
 }
 
 
+function createPlayer(id, name) {
+    return {
+        id: id,
+        name: name,
+        points: 0,
+        doubleGames: 0,
+        singleGames: 0,
+        rests: 0,
+        partners: {},
+        opponents: {}
+    };
+}
+
+
 function startTournament() {
     const players = [];
 
@@ -78,14 +93,7 @@ function startTournament() {
             return;
         }
 
-        players.push({
-            id: i,
-            name: name,
-            points: 0,
-            doubleGames: 0,
-            singleGames: 0,
-            rests: 0
-        });
+        players.push(createPlayer(i, name));
     }
 
     const tournament = {
@@ -103,9 +111,8 @@ function startTournament() {
 }
 
 
-// Test matchmaking
 const tournament = loadTournament();
 
 if (tournament) {
-    console.log("Genereret runde:", generateRound(tournament));
+    console.log("Nuværende turnering:", tournament);
 }
