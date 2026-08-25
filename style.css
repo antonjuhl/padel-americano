@@ -62,7 +62,8 @@ h2 {
 
 .card,
 .match-card,
-.rest-card {
+.rest-card,
+.leaderboard {
 
     background: white;
 
@@ -296,9 +297,53 @@ button {
 }
 
 
-.single-match .team {
+/* ==========================================
+   SCORE INPUT
+   ========================================== */
 
-    font-size: 21px;
+.score-input {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 7px;
+}
+
+
+.score-input input {
+
+    width: 58px;
+
+    height: 52px;
+
+    border: 2px solid #d4d4d8;
+
+    border-radius: 12px;
+
+    text-align: center;
+
+    font-size: 22px;
+
+    font-weight: 700;
+
+    outline: none;
+}
+
+
+.score-input input:focus {
+
+    border-color: #18181b;
+}
+
+
+.score-input span {
+
+    font-size: 18px;
+
+    font-weight: 700;
+
+    color: #71717a;
 }
 
 
@@ -347,6 +392,66 @@ button {
 
 
 /* ==========================================
+   LEADERBOARD
+   ========================================== */
+
+.leaderboard {
+
+    margin-top: 24px;
+}
+
+
+.leaderboard h2 {
+
+    margin-bottom: 16px;
+}
+
+
+.leaderboard-row {
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    padding: 12px 0;
+
+    border-bottom: 1px solid #e4e4e7;
+}
+
+
+.leaderboard-row:last-child {
+
+    border-bottom: none;
+}
+
+
+.leaderboard-position {
+
+    width: 32px;
+
+    color: #71717a;
+
+    font-weight: 700;
+}
+
+
+.leaderboard-name {
+
+    flex: 1;
+
+    font-weight: 600;
+}
+
+
+.leaderboard-points {
+
+    font-weight: 800;
+}
+
+
+/* ==========================================
    NEXT BUTTON
    ========================================== */
 
@@ -370,7 +475,7 @@ button {
    MOBILE
    ========================================== */
 
-@media (max-width: 500px) {
+@media (max-width: 600px) {
 
     .app {
 
@@ -389,9 +494,27 @@ button {
 
     .card,
     .match-card,
-    .rest-card {
+    .rest-card,
+    .leaderboard {
 
         padding: 20px;
+    }
+
+
+    .match {
+
+        grid-template-columns:
+            1fr;
+
+        gap: 12px;
+    }
+
+
+    .score-input {
+
+        justify-content: center;
+
+        order: 2;
     }
 
 
