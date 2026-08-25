@@ -4,11 +4,59 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Padel Americano</title>
+    <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
 
     <h1>Padel Americano</h1>
-    <p>7 spillere · 1 doublebane · 1 singlebane</p>
+
+    <p class="subtitle">
+        7 spillere · 1 doublebane · 1 singlebane
+    </p>
+
+    <h2>Spillere</h2>
+
+    <div class="player">
+        <span class="player-number">1.</span>
+        <input type="text" id="player1" placeholder="Navn">
+    </div>
+
+    <div class="player">
+        <span class="player-number">2.</span>
+        <input type="text" id="player2" placeholder="Navn">
+    </div>
+
+    <div class="player">
+        <span class="player-number">3.</span>
+        <input type="text" id="player3" placeholder="Navn">
+    </div>
+
+    <div class="player">
+        <span class="player-number">4.</span>
+        <input type="text" id="player4" placeholder="Navn">
+    </div>
+
+    <div class="player">
+        <span class="player-number">5.</span>
+        <input type="text" id="player5" placeholder="Navn">
+    </div>
+
+    <div class="player">
+        <span class="player-number">6.</span>
+        <input type="text" id="player6" placeholder="Navn">
+    </div>
+
+    <div class="player">
+        <span class="player-number">7.</span>
+        <input type="text" id="player7" placeholder="Navn">
+    </div>
+
+    <button class="start-button" onclick="startTournament()">
+        START TURNERING
+    </button>
+
+    <script src="script.js"></script>
 
 </body>
 </html>
