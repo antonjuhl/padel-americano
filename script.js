@@ -1426,20 +1426,52 @@ function renderLeaderboard(
         );
 
 
-    if (
-        !container
-    ) {
-
+    if (!container) {
         return;
-
     }
 
+
+    /*
+       Sort by points.
+
+       If two players have the same
+       amount of points, the player
+       with fewer games gets priority.
+    */
 
     const players =
         [...tournament.players]
             .sort(
-                (a, b) =>
-                    b.points - a.points
+                (a, b) => {
+
+                    if (
+                        b.points !== a.points
+                    ) {
+
+                        return (
+                            b.points -
+                            a.points
+                        );
+
+                    }
+
+
+                    const gamesA =
+                        a.doubleGames +
+                        a.singleGames;
+
+
+                    const gamesB =
+                        b.doubleGames +
+                        b.singleGames;
+
+
+                    return (
+                        gamesA -
+                        gamesB
+                    );
+
+                }
             );
 
 
@@ -1451,27 +1483,35 @@ function renderLeaderboard(
 
             const row =
                 document.createElement(
-                    "div"
+                    "tr"
                 );
-
-
-            row.className =
-                "leaderboard-row";
 
 
             row.innerHTML = `
 
-                <span class="leaderboard-position">
+                <td>
                     ${index + 1}
-                </span>
+                </td>
 
-                <span class="leaderboard-name">
+                <td>
                     ${player.name}
-                </span>
+                </td>
 
-                <span class="leaderboard-points">
+                <td>
                     ${player.points}
-                </span>
+                </td>
+
+                <td>
+                    ${player.doubleGames}
+                </td>
+
+                <td>
+                    ${player.singleGames}
+                </td>
+
+                <td>
+                    ${player.rests}
+                </td>
 
             `;
 
