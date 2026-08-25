@@ -12,9 +12,6 @@ function loadTournament() {
     return JSON.parse(data);
 }
 
-function getRandomItem(array) {
-    return array[Math.floor(Math.random() * array.length)];
-}
 
 function shuffle(array) {
     const copy = [...array];
@@ -28,11 +25,10 @@ function shuffle(array) {
     return copy;
 }
 
-function generateRound(tournament) {
 
+function generateRound(tournament) {
     const players = tournament.players;
 
-    // Bland spillerne så vi får lidt tilfældighed
     const shuffledPlayers = shuffle(players);
 
     const restPlayer = shuffledPlayers[0];
@@ -49,7 +45,7 @@ function generateRound(tournament) {
         shuffledPlayers[6]
     ];
 
-    const match = {
+    return {
         double: {
             team1: [
                 doublePlayers[0],
@@ -68,25 +64,8 @@ function generateRound(tournament) {
 
         rest: restPlayer
     };
-
-    return match;
 }
 
-function getRandomItem(array) {
-    return array[Math.floor(Math.random() * array.length)];
-}
-
-function shuffle(array) {
-    const copy = [...array];
-
-    for (let i = copy.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-
-        [copy[i], copy[j]] = [copy[j], copy[i]];
-    }
-
-    return copy;
-}
 
 function startTournament() {
     const players = [];
@@ -118,11 +97,15 @@ function startTournament() {
 
     saveTournament(tournament);
 
+    console.log("Turnering gemt:", tournament);
+
     alert("Turnering oprettet!");
 }
 
+
+// Test matchmaking
 const tournament = loadTournament();
 
 if (tournament) {
-    console.log(generateRound(tournament));
+    console.log("Genereret runde:", generateRound(tournament));
 }
