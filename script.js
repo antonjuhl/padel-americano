@@ -1289,30 +1289,32 @@ function submitRound() {
        CHECK THAT ALL SCORES ARE VALID WHOLE NUMBERS
     */
 
-    const scores = [
+   const scores = [
 
-        doubleScore1,
-        doubleScore2,
-        singleScore1,
-        singleScore2
+    doubleScore1,
+    doubleScore2,
+    singleScore1,
+    singleScore2
 
-    ];
+];
 
 
-    if (
-        scores.some(
-            score =>
-                !Number.isInteger(score)
-        )
-    ) {
+if (
+    scores.some(
+        score =>
+            !Number.isInteger(score) ||
+            score < 0 ||
+            score > 32
+    )
+) {
 
-        alert(
-            "Point skal være hele tal."
-        );
+    alert(
+        "Point skal være hele tal mellem 0 og 32."
+    );
 
-        return;
+    return;
 
-    }
+}
 
 
     /*
