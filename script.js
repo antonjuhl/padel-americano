@@ -62,6 +62,101 @@ function incrementHistory(object, playerId) {
 
 /*
 ==================================================
+RECENT PARTNER INFORMATION
+==================================================
+*/
+
+
+function wasPartnersLastRound(tournament, playerA, playerB) {
+
+    const lastRound =
+        tournament.history[
+            tournament.history.length - 1
+        ];
+
+
+    if (!lastRound) {
+        return false;
+    }
+
+
+    const teams = [
+        lastRound.double.team1,
+        lastRound.double.team2
+    ];
+
+
+    return teams.some(team => {
+
+        return (
+            team.includes(playerA.id) &&
+            team.includes(playerB.id)
+        );
+
+    });
+}
+
+
+function roundsSincePartners(
+    tournament,
+    playerA,
+    playerB
+) {
+
+    /*
+    Gå baglæns gennem historikken.
+
+    1 = de var makkere sidste runde
+    2 = de var makkere for to runder siden
+    osv.
+
+    0 = de har aldrig været makkere.
+    */
+
+    for (
+        let i = tournament.history.length - 1;
+        i >= 0;
+        i--
+    ) {
+
+        const round =
+            tournament.history[i];
+
+
+        const teams = [
+            round.double.team1,
+            round.double.team2
+        ];
+
+
+        const werePartners =
+            teams.some(team => {
+
+                return (
+                    team.includes(playerA.id) &&
+                    team.includes(playerB.id)
+                );
+
+            });
+
+
+        if (werePartners) {
+
+            return (
+                tournament.history.length - i
+            );
+
+        }
+
+    }
+
+
+    return 0;
+}
+
+
+/*
+==================================================
 FAIRNESS
 ==================================================
 */
@@ -71,22 +166,27 @@ function calculateBalanceScore(tournament, round) {
 
     let score = 0;
 
+
     const totalRounds =
         tournament.history.length;
 
-    /*
-    Efter N runder forventer vi i gennemsnit:
 
-    Double: 4/7 af runderne
-    Single:  2/7 af runderne
-    Rest:    1/7 af runderne
+    /*
+    Efter N runder er det matematiske ideal:
+
+    4/7 double
+    2/7 single
+    1/7 pause
     */
+
 
     const expectedDouble =
         (totalRounds + 1) * (4 / 7);
 
+
     const expectedSingle =
         (totalRounds + 1) * (2 / 7);
+
 
     const expectedRest =
         (totalRounds + 1) * (1 / 7);
@@ -97,25 +197,24 @@ function calculateBalanceScore(tournament, round) {
         let futureDouble =
             player.doubleGames;
 
+
         let futureSingle =
             player.singleGames;
+
 
         let futureRest =
             player.rests;
 
 
-        /*
-        Find ud af hvilken rolle spilleren
-        får i den nye runde.
-        */
-
         const isDouble =
             round.double.team1.includes(player) ||
             round.double.team2.includes(player);
 
+
         const isSingle =
             round.single.player1 === player ||
             round.single.player2 === player;
+
 
         const isRest =
             round.rest === player;
@@ -125,25 +224,24 @@ function calculateBalanceScore(tournament, round) {
             futureDouble++;
         }
 
+
         if (isSingle) {
             futureSingle++;
         }
+
 
         if (isRest) {
             futureRest++;
         }
 
 
-        /*
-        Straffen bliver større jo længere
-        vi kommer væk fra idealfordelingen.
-        */
-
         const doubleDifference =
             futureDouble - expectedDouble;
 
+
         const singleDifference =
             futureSingle - expectedSingle;
+
 
         const restDifference =
             futureRest - expectedRest;
@@ -173,7 +271,17 @@ function calculateBalanceScore(tournament, round) {
 }
 
 
-function calculatePartnerScore(round) {
+/*
+==================================================
+PARTNER FAIRNESS
+==================================================
+*/
+
+
+function calculatePartnerScore(
+    tournament,
+    round
+) {
 
     let score = 0;
 
@@ -186,34 +294,87 @@ function calculatePartnerScore(round) {
 
     teams.forEach(team => {
 
-        const player1 = team[0];
-        const player2 = team[1];
+        const playerA = team[0];
+        const playerB = team[1];
 
 
-        const previousPartners =
+        /*
+        ------------------------------------------
+        1. SAMLET ANTAL GANGE
+        ------------------------------------------
+        */
+
+        const previousCount =
             getPartnerCount(
-                player1,
-                player2.id
+                playerA,
+                playerB.id
             );
 
 
         /*
-        Gentagne makkere bliver straffet.
-
-        Første gang: 0
-        Anden gang: 150
-        Tredje gang: 300
-        osv.
+        Hver tidligere gentagelse
+        giver en straf.
         */
 
         score +=
-            previousPartners * 150;
+            previousCount * 150;
+
+
+        /*
+        ------------------------------------------
+        2. HVOR NYLIGT?
+        ------------------------------------------
+        */
+
+        const roundsSince =
+            roundsSincePartners(
+                tournament,
+                playerA,
+                playerB
+            );
+
+
+        if (roundsSince === 1) {
+
+            /*
+            Samme makker som sidste runde.
+
+            Meget stor straf.
+            */
+
+            score += 5000;
+
+        } else if (roundsSince === 2) {
+
+            /*
+            De var makkere for
+            to runder siden.
+            */
+
+            score += 1000;
+
+        } else if (roundsSince === 3) {
+
+            score += 300;
+
+        } else if (roundsSince === 4) {
+
+            score += 100;
+
+        }
 
     });
 
 
     return score;
 }
+
+
+/*
+==================================================
+OPPONENT FAIRNESS
+==================================================
+*/
 
 
 function calculateOpponentScore(round) {
@@ -255,90 +416,31 @@ function calculateOpponentScore(round) {
 }
 
 
-function calculateRepeatPenalty(tournament, round) {
-
-    let score = 0;
-
-
-    const lastRound =
-        tournament.history[
-            tournament.history.length - 1
-        ];
-
-
-    if (!lastRound) {
-        return 0;
-    }
-
-
-    /*
-    SAMME MAKKER TO RUNDER I TRÆK
-    */
-
-    const currentTeams = [
-        round.double.team1,
-        round.double.team2
-    ];
-
-
-    const previousTeams = [
-        lastRound.double.team1,
-        lastRound.double.team2
-    ];
-
-
-    currentTeams.forEach(currentTeam => {
-
-        const currentA =
-            currentTeam[0].id;
-
-        const currentB =
-            currentTeam[1].id;
-
-
-        previousTeams.forEach(previousTeam => {
-
-            const samePair =
-                previousTeam.includes(currentA) &&
-                previousTeam.includes(currentB);
-
-
-            if (samePair) {
-
-                /*
-                Meget stor straf.
-
-                Vi vil næsten aldrig
-                have dette.
-                */
-
-                score += 5000;
-
-            }
-
-        });
-
-    });
-
-
-    return score;
-}
+/*
+==================================================
+RANDOMNESS
+==================================================
+*/
 
 
 function calculateRandomness() {
 
-    /*
-    Lille tilfældighed.
-
-    Det betyder, at to lige gode
-    opstillinger ikke altid bliver ens.
-    */
-
     return Math.random() * 5;
+
 }
 
 
-function scoreRound(tournament, round) {
+/*
+==================================================
+TOTAL ROUND SCORE
+==================================================
+*/
+
+
+function scoreRound(
+    tournament,
+    round
+) {
 
     let score = 0;
 
@@ -352,19 +454,13 @@ function scoreRound(tournament, round) {
 
     score +=
         calculatePartnerScore(
+            tournament,
             round
         );
 
 
     score +=
         calculateOpponentScore(
-            round
-        );
-
-
-    score +=
-        calculateRepeatPenalty(
-            tournament,
             round
         );
 
@@ -379,15 +475,19 @@ function scoreRound(tournament, round) {
 
 /*
 ==================================================
-GENERATE ROUND
+GENERATE CANDIDATE
 ==================================================
 */
 
 
-function generateCandidateRound(tournament) {
+function generateCandidateRound(
+    tournament
+) {
 
     const players =
-        shuffle(tournament.players);
+        shuffle(
+            tournament.players
+        );
 
 
     return {
@@ -422,7 +522,15 @@ function generateCandidateRound(tournament) {
             players[6]
 
     };
+
 }
+
+
+/*
+==================================================
+GENERATE BEST ROUND
+==================================================
+*/
 
 
 function generateRound(tournament) {
@@ -432,14 +540,18 @@ function generateRound(tournament) {
 
 
     /*
-    Vi tester 1000 forskellige
-    opstillinger.
+    1000 kandidater er rigeligt med
+    kun 7 spillere.
     */
 
     const attempts = 1000;
 
 
-    for (let i = 0; i < attempts; i++) {
+    for (
+        let i = 0;
+        i < attempts;
+        i++
+    ) {
 
         const candidate =
             generateCandidateRound(
@@ -454,9 +566,14 @@ function generateRound(tournament) {
             );
 
 
-        if (score < bestScore) {
+        if (
+            score <
+            bestScore
+        ) {
 
-            bestScore = score;
+            bestScore =
+                score;
+
 
             bestRound =
                 candidate;
@@ -499,27 +616,32 @@ function recordRound(
     const doubleTeam1 =
         round.double.team1;
 
+
     const doubleTeam2 =
         round.double.team2;
+
 
     const singlePlayer1 =
         round.single.player1;
 
+
     const singlePlayer2 =
         round.single.player2;
+
 
     const restPlayer =
         round.rest;
 
 
     /*
-    DOUBLE POINTS
+    DOUBLE
     */
 
     doubleTeam1.forEach(player => {
 
         player.points +=
             doubleScore.team1;
+
 
         player.doubleGames++;
 
@@ -531,23 +653,28 @@ function recordRound(
         player.points +=
             doubleScore.team2;
 
+
         player.doubleGames++;
 
     });
 
 
     /*
-    SINGLE POINTS
+    SINGLE
+
+    Single er også 32 point totalt.
     */
 
     singlePlayer1.points +=
         singleScore.player1;
+
 
     singlePlayer1.singleGames++;
 
 
     singlePlayer2.points +=
         singleScore.player2;
+
 
     singlePlayer2.singleGames++;
 
@@ -636,6 +763,7 @@ function recordRound(
         round:
             tournament.currentRound,
 
+
         double: {
 
             team1:
@@ -643,15 +771,18 @@ function recordRound(
                     player => player.id
                 ),
 
+
             team2:
                 doubleTeam2.map(
                     player => player.id
                 ),
 
+
             score: {
 
                 team1:
                     doubleScore.team1,
+
 
                 team2:
                     doubleScore.team2
@@ -660,18 +791,22 @@ function recordRound(
 
         },
 
+
         single: {
 
             player1:
                 singlePlayer1.id,
 
+
             player2:
                 singlePlayer2.id,
+
 
             score: {
 
                 player1:
                     singleScore.player1,
+
 
                 player2:
                     singleScore.player2
@@ -679,6 +814,7 @@ function recordRound(
             }
 
         },
+
 
         rest:
             restPlayer.id
@@ -696,6 +832,7 @@ function recordRound(
     saveTournament(
         tournament
     );
+
 }
 
 
@@ -711,7 +848,11 @@ function startTournament() {
     const players = [];
 
 
-    for (let i = 1; i <= 7; i++) {
+    for (
+        let i = 1;
+        i <= 7;
+        i++
+    ) {
 
         const input =
             document.getElementById(
@@ -723,13 +864,17 @@ function startTournament() {
             input.value.trim();
 
 
-        if (name === "") {
+        if (
+            name === ""
+        ) {
 
             alert(
                 `Skriv et navn på spiller ${i}`
             );
 
+
             return;
+
         }
 
 
@@ -748,11 +893,14 @@ function startTournament() {
         players:
             players,
 
+
         currentRound:
             1,
 
+
         history:
             [],
+
 
         currentMatches:
             null
@@ -774,6 +922,7 @@ function startTournament() {
     alert(
         "Turnering oprettet!"
     );
+
 }
 
 
@@ -784,31 +933,53 @@ SIMULATOR
 */
 
 
-function simulateTournament(numberOfRounds = 100) {
+function simulateTournament(
+    numberOfRounds = 100
+) {
 
     /*
-    Vi laver en HELT NY testturnering.
-
-    Den påvirker IKKE din rigtige
-    turnering i localStorage.
+    Separat testturnering.
+    Den ændrer IKKE den rigtige
+    turnering.
     */
 
 
     const players = [
 
-        createPlayer(1, "Anton"),
+        createPlayer(
+            1,
+            "Anton"
+        ),
 
-        createPlayer(2, "Næs"),
+        createPlayer(
+            2,
+            "Næs"
+        ),
 
-        createPlayer(3, "Hans"),
+        createPlayer(
+            3,
+            "Hans"
+        ),
 
-        createPlayer(4, "Gam"),
+        createPlayer(
+            4,
+            "Gam"
+        ),
 
-        createPlayer(5, "Legind"),
+        createPlayer(
+            5,
+            "Legind"
+        ),
 
-        createPlayer(6, "Mølle"),
+        createPlayer(
+            6,
+            "Mølle"
+        ),
 
-        createPlayer(7, "Krelle")
+        createPlayer(
+            7,
+            "Krelle"
+        )
 
     ];
 
@@ -818,11 +989,14 @@ function simulateTournament(numberOfRounds = 100) {
         players:
             players,
 
+
         currentRound:
             1,
 
+
         history:
             [],
+
 
         currentMatches:
             null
@@ -831,7 +1005,7 @@ function simulateTournament(numberOfRounds = 100) {
 
 
     /*
-    Kør det ønskede antal runder.
+    Kør simulationen.
     */
 
     for (
@@ -847,14 +1021,15 @@ function simulateTournament(numberOfRounds = 100) {
 
 
         /*
-        Vi behøver ikke realistiske
-        scores her.
+        Score er ligegyldig
+        for matchmaking-testen.
 
-        Scores er ligegyldige for
-        matchmaking-testen.
+        Begge kampe giver bare
+        32 point.
         */
 
         recordRound(
+
             simulation,
 
             round,
@@ -868,22 +1043,25 @@ function simulateTournament(numberOfRounds = 100) {
                 player1: 16,
                 player2: 16
             }
+
         );
 
     }
 
 
     /*
-    VIS RESULTAT
+    RESULTAT
     */
 
     console.log(
         "=============================="
     );
 
+
     console.log(
         `SIMULATION: ${numberOfRounds} ROUNDS`
     );
+
 
     console.log(
         "=============================="
@@ -897,11 +1075,14 @@ function simulateTournament(numberOfRounds = 100) {
                 name:
                     player.name,
 
+
                 double:
                     player.doubleGames,
 
+
                 single:
                     player.singleGames,
+
 
                 rests:
                     player.rests
@@ -916,7 +1097,7 @@ function simulateTournament(numberOfRounds = 100) {
 
 
     /*
-    FIND MAKS/MIN
+    FORSKELLE
     */
 
     const doubleValues =
@@ -942,22 +1123,34 @@ function simulateTournament(numberOfRounds = 100) {
 
     console.log(
         "DOUBLE difference:",
-        Math.max(...doubleValues) -
-        Math.min(...doubleValues)
+        Math.max(
+            ...doubleValues
+        ) -
+        Math.min(
+            ...doubleValues
+        )
     );
 
 
     console.log(
         "SINGLE difference:",
-        Math.max(...singleValues) -
-        Math.min(...singleValues)
+        Math.max(
+            ...singleValues
+        ) -
+        Math.min(
+            ...singleValues
+        )
     );
 
 
     console.log(
         "REST difference:",
-        Math.max(...restValues) -
-        Math.min(...restValues)
+        Math.max(
+            ...restValues
+        ) -
+        Math.min(
+            ...restValues
+        )
     );
 
 
@@ -983,8 +1176,7 @@ function simulateTournament(numberOfRounds = 100) {
 
 
     /*
-    Find den største
-    makker-gentagelse.
+    STØRSTE MAKKER-GENTAGELSE
     */
 
     let highestPartnerCount = 0;
@@ -995,19 +1187,21 @@ function simulateTournament(numberOfRounds = 100) {
 
             Object.values(
                 player.partners
-            ).forEach(count => {
+            ).forEach(
+                count => {
 
-                if (
-                    count >
-                    highestPartnerCount
-                ) {
+                    if (
+                        count >
+                        highestPartnerCount
+                    ) {
 
-                    highestPartnerCount =
-                        count;
+                        highestPartnerCount =
+                            count;
+
+                    }
 
                 }
-
-            });
+            );
 
         }
     );
@@ -1020,4 +1214,5 @@ function simulateTournament(numberOfRounds = 100) {
 
 
     return simulation;
+
 }
