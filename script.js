@@ -131,6 +131,23 @@ function incrementHistory(
 
 
 /* =========================================================
+   FIND PLAYER IN TOURNAMENT
+   ========================================================= */
+
+function getPlayerById(
+    tournament,
+    id
+) {
+
+    return tournament.players.find(
+        player =>
+            player.id === id
+    );
+
+}
+
+
+/* =========================================================
    PARTNER RECENCY
    ========================================================= */
 
@@ -210,6 +227,14 @@ function calculateBalanceScore(
         tournament.history.length + 1;
 
 
+    /*
+       Over many rounds there should be roughly:
+
+       4 / 7 players in double
+       2 / 7 players in single
+       1 / 7 player resting
+    */
+
     const expectedDouble =
         totalRounds * 4 / 7;
 
@@ -237,11 +262,15 @@ function calculateBalanceScore(
 
             if (
 
-                round.double.team1.includes(player)
+                round.double.team1.some(
+                    p => p.id === player.id
+                )
 
                 ||
 
-                round.double.team2.includes(player)
+                round.double.team2.some(
+                    p => p.id === player.id
+                )
 
             ) {
 
@@ -252,11 +281,11 @@ function calculateBalanceScore(
 
             if (
 
-                round.single.player1 === player
+                round.single.player1.id === player.id
 
                 ||
 
-                round.single.player2 === player
+                round.single.player2.id === player.id
 
             ) {
 
@@ -266,7 +295,7 @@ function calculateBalanceScore(
 
 
             if (
-                round.rest === player
+                round.rest.id === player.id
             ) {
 
                 rests++;
@@ -327,9 +356,23 @@ function calculatePartnerScore(
     teams.forEach(
         team => {
 
-            const a = team[0];
+            const a =
+                getPlayerById(
+                    tournament,
+                    team[0].id
+                );
 
-            const b = team[1];
+
+            const b =
+                getPlayerById(
+                    tournament,
+                    team[1].id
+                );
+
+
+            if (!a || !b) {
+                return;
+            }
 
 
             const previous =
@@ -339,9 +382,19 @@ function calculatePartnerScore(
                 );
 
 
+            /*
+               Repeating an old partner is allowed,
+               but should be less desirable.
+            */
+
             score +=
                 previous * 150;
 
+
+            /*
+               Strong penalty for using the same
+               partner again very recently.
+            */
 
             const recent =
                 roundsSincePartners(
@@ -397,6 +450,7 @@ function calculatePartnerScore(
    ========================================================= */
 
 function calculateOpponentScore(
+    tournament,
     round
 ) {
 
@@ -404,16 +458,27 @@ function calculateOpponentScore(
 
 
     round.double.team1.forEach(
-        a => {
+        playerA => {
 
             round.double.team2.forEach(
-                b => {
+                playerB => {
 
-                    score +=
+                    const a =
+                        getPlayerById(
+                            tournament,
+                            playerA.id
+                        );
+
+
+                    const previous =
                         getOpponentCount(
                             a,
-                            b.id
-                        ) * 20;
+                            playerB.id
+                        );
+
+
+                    score +=
+                        previous * 20;
 
                 }
             );
@@ -422,9 +487,16 @@ function calculateOpponentScore(
     );
 
 
+    const single1 =
+        getPlayerById(
+            tournament,
+            round.single.player1.id
+        );
+
+
     score +=
         getOpponentCount(
-            round.single.player1,
+            single1,
             round.single.player2.id
         ) * 20;
 
@@ -460,6 +532,7 @@ function scoreRound(
         +
 
         calculateOpponentScore(
+            tournament,
             round
         )
 
@@ -583,25 +656,104 @@ function recordRound(
     singleScore
 ) {
 
+    /*
+       IMPORTANT:
+
+       currentMatches may have been loaded from
+       localStorage, meaning its player objects are
+       separate objects from tournament.players.
+
+       Therefore we ALWAYS find the real player
+       using the player's ID.
+    */
+
+
     const team1 =
-        round.double.team1;
+
+        round.double.team1.map(
+            player =>
+                getPlayerById(
+                    tournament,
+                    player.id
+                )
+        );
+
 
     const team2 =
-        round.double.team2;
+
+        round.double.team2.map(
+            player =>
+                getPlayerById(
+                    tournament,
+                    player.id
+                )
+        );
 
 
     const single1 =
-        round.single.player1;
+        getPlayerById(
+            tournament,
+            round.single.player1.id
+        );
+
 
     const single2 =
-        round.single.player2;
+        getPlayerById(
+            tournament,
+            round.single.player2.id
+        );
 
 
     const rest =
-        round.rest;
+        getPlayerById(
+            tournament,
+            round.rest.id
+        );
 
 
-    /* DOUBLE POINTS */
+    /*
+       SAFETY CHECK
+    */
+
+    if (
+
+        team1.some(
+            player => !player
+        )
+
+        ||
+
+        team2.some(
+            player => !player
+        )
+
+        ||
+
+        !single1
+
+        ||
+
+        !single2
+
+        ||
+
+        !rest
+
+    ) {
+
+        console.error(
+            "Could not find all players when recording round.",
+            round
+        );
+
+        return false;
+
+    }
+
+
+    /* =====================================================
+       DOUBLE POINTS
+       ===================================================== */
 
     team1.forEach(
         player => {
@@ -627,7 +779,9 @@ function recordRound(
     );
 
 
-    /* SINGLE POINTS */
+    /* =====================================================
+       SINGLE POINTS
+       ===================================================== */
 
     single1.points +=
         singleScore.player1;
@@ -641,12 +795,16 @@ function recordRound(
     single2.singleGames++;
 
 
-    /* REST */
+    /* =====================================================
+       REST
+       ===================================================== */
 
     rest.rests++;
 
 
-    /* PARTNERS */
+    /* =====================================================
+       PARTNERS
+       ===================================================== */
 
     incrementHistory(
         team1[0].partners,
@@ -672,7 +830,9 @@ function recordRound(
     );
 
 
-    /* DOUBLE OPPONENTS */
+    /* =====================================================
+       DOUBLE OPPONENTS
+       ===================================================== */
 
     team1.forEach(
         player1 => {
@@ -698,7 +858,9 @@ function recordRound(
     );
 
 
-    /* SINGLE OPPONENTS */
+    /* =====================================================
+       SINGLE OPPONENTS
+       ===================================================== */
 
     incrementHistory(
         single1.opponents,
@@ -712,7 +874,9 @@ function recordRound(
     );
 
 
-    /* HISTORY */
+    /* =====================================================
+       HISTORY
+       ===================================================== */
 
     tournament.history.push({
 
@@ -779,11 +943,14 @@ function recordRound(
         tournament
     );
 
+
+    return true;
+
 }
 
 
 /* =========================================================
-   START
+   START TOURNAMENT
    ========================================================= */
 
 function startTournament() {
@@ -831,7 +998,6 @@ function startTournament() {
     const tournament = {
 
         players:
-
             players,
 
         currentRound:
@@ -865,7 +1031,7 @@ function startTournament() {
 
 
 /* =========================================================
-   SHOW TOURNAMENT
+   SHOW TOURNAMENT SCREEN
    ========================================================= */
 
 function showTournamentScreen(
@@ -974,7 +1140,7 @@ function renderRound(
 
 
     /*
-    CLEAR OLD SCORES
+       Clear previous scores.
     */
 
     document.getElementById(
@@ -1060,7 +1226,7 @@ function submitRound() {
 
 
     /*
-    CHECK THAT ALL FIELDS ARE FILLED
+       CHECK THAT ALL FIELDS ARE FILLED
     */
 
     if (
@@ -1099,7 +1265,7 @@ function submitRound() {
 
 
     /*
-    CHECK DOUBLE = 32
+       CHECK DOUBLE = 32
     */
 
     if (
@@ -1117,7 +1283,7 @@ function submitRound() {
 
 
     /*
-    CHECK SINGLE = 32
+       CHECK SINGLE = 32
     */
 
     if (
@@ -1135,7 +1301,7 @@ function submitRound() {
 
 
     /*
-    CHECK RANGE
+       CHECK RANGE
     */
 
     const scores = [
@@ -1166,40 +1332,52 @@ function submitRound() {
 
 
     /*
-    RECORD
+       RECORD ROUND
     */
 
-    recordRound(
+    const recorded =
+        recordRound(
 
-        tournament,
+            tournament,
 
-        tournament.currentMatches,
+            tournament.currentMatches,
 
-        {
+            {
 
-            team1:
-                doubleScore1,
+                team1:
+                    doubleScore1,
 
-            team2:
-                doubleScore2
+                team2:
+                    doubleScore2
 
-        },
+            },
 
-        {
+            {
 
-            player1:
-                singleScore1,
+                player1:
+                    singleScore1,
 
-            player2:
-                singleScore2
+                player2:
+                    singleScore2
 
-        }
+            }
 
-    );
+        );
+
+
+    if (!recorded) {
+
+        alert(
+            "Der opstod en fejl, da runden skulle gemmes."
+        );
+
+        return;
+
+    }
 
 
     /*
-    GENERATE NEXT ROUND
+       GENERATE NEXT ROUND
     */
 
     tournament.currentMatches =
@@ -1214,7 +1392,7 @@ function submitRound() {
 
 
     /*
-    SHOW NEXT ROUND
+       SHOW NEXT ROUND
     */
 
     renderRound(
@@ -1223,7 +1401,7 @@ function submitRound() {
 
 
     /*
-    SCROLL TO TOP
+       Scroll to top
     */
 
     window.scrollTo(
