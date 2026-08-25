@@ -38,12 +38,15 @@ h1 {
     margin: 0;
 
     font-size: 36px;
+
     line-height: 1.1;
 }
 
 
 h2 {
-    margin-top: 0;
+    margin: 0;
+
+    font-size: 24px;
 }
 
 
@@ -287,16 +290,6 @@ button {
 }
 
 
-.vs {
-
-    font-size: 12px;
-
-    font-weight: 800;
-
-    color: #a1a1aa;
-}
-
-
 /* ==========================================
    SCORE INPUT
    ========================================== */
@@ -401,35 +394,95 @@ button {
 }
 
 
-.leaderboard h2 {
+.leaderboard-header {
 
-    margin-bottom: 16px;
+    margin-bottom: 18px;
 }
 
 
-.leaderboard-row {
+.section-label {
 
-    display: flex;
+    display: block;
 
-    align-items: center;
+    margin-bottom: 4px;
 
-    justify-content: space-between;
+    font-size: 11px;
 
-    padding: 12px 0;
+    font-weight: 800;
 
-    border-bottom: 1px solid #e4e4e7;
+    letter-spacing: 1px;
+
+    color: #71717a;
 }
 
 
-.leaderboard-row:last-child {
+.table-wrapper {
 
-    border-bottom: none;
+    width: 100%;
+
+    overflow-x: auto;
 }
 
 
-.leaderboard-position {
+table {
 
-    width: 32px;
+    width: 100%;
+
+    border-collapse: collapse;
+}
+
+
+thead {
+
+    border-bottom: 2px solid #e4e4e7;
+}
+
+
+th {
+
+    padding: 10px 8px;
+
+    text-align: right;
+
+    font-size: 11px;
+
+    letter-spacing: 0.5px;
+
+    color: #71717a;
+
+    font-weight: 800;
+}
+
+
+th:nth-child(1),
+th:nth-child(2) {
+
+    text-align: left;
+}
+
+
+td {
+
+    padding: 14px 8px;
+
+    border-bottom: 1px solid #f0f0f2;
+
+    text-align: right;
+
+    font-size: 14px;
+}
+
+
+td:nth-child(1),
+td:nth-child(2) {
+
+    text-align: left;
+}
+
+
+td:nth-child(1) {
+
+    width: 35px;
 
     color: #71717a;
 
@@ -437,17 +490,61 @@ button {
 }
 
 
-.leaderboard-name {
+td:nth-child(2) {
 
-    flex: 1;
-
-    font-weight: 600;
+    font-weight: 650;
 }
 
 
-.leaderboard-points {
+td:nth-child(3) {
 
     font-weight: 800;
+
+    font-size: 16px;
+}
+
+
+tbody tr:last-child td {
+
+    border-bottom: none;
+}
+
+
+/* TOP THREE */
+
+tbody tr:nth-child(1) td:first-child {
+
+    color: #18181b;
+}
+
+
+tbody tr:nth-child(1) td:nth-child(2) {
+
+    font-weight: 800;
+}
+
+
+.legend {
+
+    display: flex;
+
+    gap: 18px;
+
+    margin-top: 18px;
+
+    padding-top: 15px;
+
+    border-top: 1px solid #e4e4e7;
+
+    color: #71717a;
+
+    font-size: 11px;
+}
+
+
+.legend strong {
+
+    color: #18181b;
 }
 
 
@@ -521,6 +618,21 @@ button {
     .team {
 
         font-size: 18px;
+    }
+
+
+    th,
+    td {
+
+        padding-left: 6px;
+
+        padding-right: 6px;
+    }
+
+
+    .legend {
+
+        gap: 12px;
     }
 
 }
